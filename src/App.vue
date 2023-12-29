@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import RingCommand from "./components/RingCommand.vue";
 
-const showCommand = ref(true);
+const showCommand = ref(false);
 
 const switchCommand = () => {
   showCommand.value = !showCommand.value;
@@ -10,7 +10,7 @@ const switchCommand = () => {
 </script>
 
 <template>
-  <RingCommand class="ring-command" v-if="showCommand" />
+  <RingCommand class="ring-command" :visible="showCommand" />
   <button class="button" @click="switchCommand">Command</button>
 </template>
 
@@ -20,7 +20,7 @@ const switchCommand = () => {
 }
 .ring-command {
   position: absolute;
-  top: calc(50% - 120px);
-  left: calc(50% - 120px);
+  top: calc(50% - 160px);
+  left: calc(50% - 160px);
 }
 </style>

@@ -19,9 +19,6 @@ devDependencies:
   sass:
     specifier: ^1.69.5
     version: 1.69.5
-  scss:
-    specifier: ^0.2.4
-    version: 0.2.4
   typescript:
     specifier: ^5.2.2
     version: 5.3.3
@@ -686,11 +683,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /ometa@0.2.2:
-    resolution: {integrity: sha512-LZuoK/yjU3FvrxPjUXUlZ1bavCfBPqauA7fsNdwi+AVhRdyk2IzgP3JRnevvjzQ6fKHdUw8YISshf53FmpHrng==}
-    engines: {node: '>= 0.2.0'}
-    dev: true
-
   /path-browserify@1.0.1:
     resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
     dev: true
@@ -747,13 +739,6 @@ packages:
       chokidar: 3.5.3
       immutable: 4.3.4
       source-map-js: 1.0.2
-    dev: true
-
-  /scss@0.2.4:
-    resolution: {integrity: sha512-4u8V87F+Q/upVhUmhPnB4C1R11xojkRkWjExL2v0CX2EXTg18VrKd+9JWoeyCp2VEMdSpJsyAvVU+rVjogh51A==}
-    engines: {node: '>= 0.2.0'}
-    dependencies:
-      ometa: 0.2.2
     dev: true
 
   /semver@7.5.4:

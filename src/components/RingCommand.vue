@@ -1,74 +1,95 @@
 <script setup lang="ts">
-import { Transition, computed, onMounted, ref } from "vue";
+import { Transition, computed, nextTick, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import CommandCursor from "./CommandCursor.vue";
 
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    required: true,
+  },
+});
+
+const commandList = [
+  {
+    icon: "logos:slack-icon",
+    name: "Slack",
+  },
+  {
+    icon: "logos:discord-icon",
+    name: "Discord",
+  },
+  {
+    icon: "logos:chrome",
+    name: "Chrome",
+  },
+  {
+    icon: "logos:google-calendar",
+    name: "Google Calendar",
+  },
+  {
+    icon: "logos:visual-studio-code",
+    name: "Visual Studio Code",
+  },
+  {
+    icon: "logos:figma",
+    name: "Figma",
+  },
+  {
+    icon: "logos:adobe-illustrator",
+    name: "Adobe Illustrator",
+  },
+  {
+    icon: "logos:spotify-icon",
+    name: "Spotify",
+  },
+];
+
 const ringCommandList = ref<HTMLElement | null>(null);
-const rotation = ref(1);
+const focusIndex = ref(0);
 const itemLength = ref(8);
-const transitionState = ref("enter");
-
-const translateX = computed(() => {
-  switch (transitionState.value) {
-    case "enter":
-      return 300;
-    case "leave":
-      return 300;
-    case "after-enter":
-    default:
-      return 120;
-  }
-});
-
-const enterRotate = computed(() => {
-  switch (transitionState.value) {
-    case "enter":
-      return 120;
-    case "leave":
-      return 120;
-    case "after-enter":
-    default:
-      return 0;
-  }
-});
+const pauseTransition = ref(false);
 
 const commandStyle = computed(() => {
   return {
-    transform: `rotate(${360 / itemLength.value}deg)`,
+    transform: `rotate(${(360 / itemLength.value) * -focusIndex.value}deg)`,
   };
 });
 
 const commandItemStyle = (index: number) => {
-  const angle =
-    (index * 360) / itemLength.value +
-    (rotation.value * 360) / itemLength.value +
-    enterRotate.value;
+  const angle = (index * 360) / itemLength.value;
   return {
     transform: `rotate(${angle}deg)`,
   };
 };
 
 const commandItemIconStyle = (index: number) => {
-  const angle =
-    (index * 360) / itemLength.value +
-    45 +
-    (rotation.value * 360) / itemLength.value;
+  const angle = -(
+    (index * 360) / itemLength.value -
+    (focusIndex.value * 360) / itemLength.value
+  );
   return {
-    transform: `translate(${translateX.value}px, 0) rotate(-${angle}deg)`,
+    transform: `rotate(${angle}deg)`,
   };
 };
 
 const onKeyDownRight = () => {
-  rotation.value += 1;
+  focusIndex.value += 1;
 };
 
 const onKeyDownLeft = () => {
-  rotation.value -= 1;
+  focusIndex.value -= 1;
 };
 
-const updateTransitionState = (state: string) => {
-  console.log("updateTransitionState", state);
-  transitionState.value = state;
+// 大きすぎる値にならないように止まった時点でリセットする
+const onListTransitionEnd = () => {
+  if (Math.abs(focusIndex.value) >= itemLength.value) {
+    pauseTransition.value = true;
+    focusIndex.value = Math.abs(focusIndex.value) % itemLength.value;
+    setTimeout(() => {
+      pauseTransition.value = false;
+    }, 0);
+  }
 };
 
 onMounted(() => {
@@ -77,125 +98,92 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="ring-command-container">
-    <Transition
-      @before-enter="updateTransitionState('enter')"
-      @after-enter="updateTransitionState('after-enter')"
-      @leave="
-        (_, done) => {
-          updateTransitionState('leave');
-          done();
-        }
-      "
-      appear
-    >
-      <ul
-        class="ring-command-list"
-        @keydown.right="onKeyDownRight"
-        @keydown.left="onKeyDownLeft"
-        ref="ringCommandList"
-        tabindex="0"
-        :style="commandStyle"
-      >
-        <li :style="commandItemStyle(0)">
-          <Icon
-            icon="logos:slack-icon"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(0)"
-          />
-        </li>
-        <li :style="commandItemStyle(1)">
-          <Icon
-            icon="logos:discord-icon"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(1)"
-          />
-        </li>
-        <li :style="commandItemStyle(2)">
-          <Icon
-            icon="logos:chrome"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(2)"
-          />
-        </li>
-        <li :style="commandItemStyle(3)">
-          <Icon
-            icon="logos:google-calendar"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(3)"
-          />
-        </li>
-        <li :style="commandItemStyle(4)">
-          <Icon
-            icon="logos:visual-studio-code"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(4)"
-          />
-        </li>
-        <li :style="commandItemStyle(5)">
-          <Icon
-            icon="logos:figma"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(5)"
-          />
-        </li>
-        <li :style="commandItemStyle(6)">
-          <Icon
-            icon="logos:adobe-illustrator"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(6)"
-          />
-        </li>
-        <li :style="commandItemStyle(7)">
-          <Icon
-            icon="logos:spotify-icon"
-            :width="48"
-            :height="48"
-            :style="commandItemIconStyle(7)"
-          />
-        </li>
-      </ul>
-    </Transition>
-    <CommandCursor class="cursor" />
-  </div>
+  <Transition name="ring" appear>
+    <div class="ring-command-container" v-show="props.visible">
+      <div class="ring-command-list outer">
+        <ul
+          class="ring-command-list inner"
+          :class="{ pause: pauseTransition }"
+          @keydown.right="onKeyDownRight"
+          @keydown.left="onKeyDownLeft"
+          ref="ringCommandList"
+          tabindex="0"
+          :style="commandStyle"
+          @transitionend="onListTransitionEnd"
+        >
+          <li
+            v-for="(item, index) in commandList"
+            :key="index"
+            :style="commandItemStyle(index)"
+            :class="{
+              focus:
+                index ===
+                (focusIndex < 0 ? itemLength + focusIndex : focusIndex),
+            }"
+          >
+            <div class="ring-command-item inner">
+              <Icon
+                class="icon"
+                :icon="item.icon"
+                :width="48"
+                :height="48"
+                :style="commandItemIconStyle(index)"
+              />
+              <span class="name">{{ item.name }}</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <CommandCursor class="cursor" />
+    </div>
+  </Transition>
 </template>
 
 <style scoped lang="scss">
 .ring-command-container {
-  width: 240px;
-  height: 240px;
+  width: 320px;
+  height: 320px;
+  transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 .ring-command-list {
   position: relative;
   margin: 0;
   padding: 0;
-  width: 240px;
-  height: 240px;
+  width: 100%;
+  height: 100%;
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
   transform-origin: 50% 50%;
   outline: none;
 
-  > li {
+  &.pause {
+    transition: none;
+
+    .icon {
+      transition: none;
+    }
+  }
+
+  > li,
+  .ring-command-item {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 100px;
-    height: 48px;
+    width: 48px;
+    height: 100%;
     position: absolute;
-    top: calc(50% - 24px);
-    left: 50%;
+    top: 0;
+    left: calc(50% - 24px);
     transform-origin: 0 50%;
     transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+    transform-origin: 50% 50%;
     will-change: transform;
+
+    &.focus .name {
+      visibility: visible;
+    }
 
     > svg {
       position: absolute;
@@ -203,12 +191,34 @@ onMounted(() => {
       left: 0;
       transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
       will-change: transform;
+      transform-origin: 50% 50%;
     }
   }
 }
 .cursor {
   position: absolute;
-  top: -52px;
+  top: -4px;
   left: calc(50% - 28px);
+}
+.name {
+  position: absolute;
+  top: 56px;
+  font-size: 12px;
+  font-weight: bold;
+  visibility: hidden;
+}
+
+// animation
+.ring-enter-from,
+.ring-leave-to {
+  .ring-command-list.outer {
+    transform: rotate(120deg);
+  }
+  .ring-command-item {
+    transform: translateX(400px);
+  }
+}
+.ring-enter-active,
+.ring-leave-active {
 }
 </style>
