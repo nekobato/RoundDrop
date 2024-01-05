@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Transition, computed, nextTick, onMounted, ref } from "vue";
+import { Transition, computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import CommandCursor from "./CommandCursor.vue";
 
@@ -90,6 +90,13 @@ const onListTransitionEnd = () => {
       pauseTransition.value = false;
     }, 0);
   }
+
+  if (props.visible) {
+    ringCommandList.value?.focus();
+    window.ipc.send("ring:opened");
+  } else {
+    window.ipc.send("ring:closed");
+  }
 };
 
 onMounted(() => {
@@ -144,6 +151,7 @@ onMounted(() => {
   width: 320px;
   height: 320px;
   transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  will-change: transform;
 }
 .ring-command-list {
   position: relative;
@@ -156,6 +164,7 @@ onMounted(() => {
   align-items: center;
   transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
   transform-origin: 50% 50%;
+  will-change: transform;
   outline: none;
 
   &.pause {
@@ -190,8 +199,8 @@ onMounted(() => {
       top: 0;
       left: 0;
       transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
-      will-change: transform;
       transform-origin: 50% 50%;
+      will-change: transform;
     }
   }
 }

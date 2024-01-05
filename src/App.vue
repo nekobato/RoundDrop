@@ -4,14 +4,17 @@ import RingCommand from "./components/RingCommand.vue";
 
 const showCommand = ref(false);
 
-const switchCommand = () => {
-  showCommand.value = !showCommand.value;
-};
+window.ipc.on("ring:open", () => {
+  showCommand.value = true;
+});
+
+window.ipc.on("ring:close", () => {
+  showCommand.value = false;
+});
 </script>
 
 <template>
   <RingCommand class="ring-command" :visible="showCommand" />
-  <button class="button" @click="switchCommand">Command</button>
 </template>
 
 <style scoped>
