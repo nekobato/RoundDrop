@@ -18,6 +18,7 @@ function createWindow() {
     transparent: true,
     resizable: false,
     movable: false,
+    show: false,
   });
 
   const { workArea } = require("electron").screen.getPrimaryDisplay();
@@ -28,6 +29,7 @@ function createWindow() {
     height: workArea.height,
   });
   win.setVisibleOnAllWorkspaces(true);
+  // win.setIgnoreMouseEvents(true);
 
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("main-process-message", new Date().toLocaleString());
@@ -38,6 +40,7 @@ function createWindow() {
   } else {
     win.loadFile(statics.pageRoot);
   }
+  win.webContents.openDevTools();
 }
 
 app.on("window-all-closed", () => {
@@ -53,24 +56,32 @@ app.on("activate", () => {
   }
 });
 
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
+
 app
   .whenReady()
   .then(createWindow)
   .then(() => {
-    globalShortcut.register("CommandOrControl+Shift+|", () => {
+    globalShortcut.register("Control+Alt+Z", () => {
       if (win?.isVisible()) {
         win?.webContents.send("ring:close");
+        console.log("Control+Alt+Z", "close");
       } else {
         win?.show();
         win?.webContents.send("ring:open");
+        console.log("Control+Alt+Z", "open");
       }
     });
 
     ipcMain.on("ring:opened", () => {
+      win?.setIgnoreMouseEvents(false);
       win?.focus();
     });
 
     ipcMain.on("ring:closed", () => {
+      win?.setIgnoreMouseEvents(true);
       win?.hide();
     });
   });
