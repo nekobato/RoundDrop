@@ -2,6 +2,7 @@ import { app, BrowserWindow, globalShortcut, ipcMain } from "electron";
 import * as statics from "./static";
 import path from "node:path";
 
+// 残像防止
 app.disableHardwareAcceleration();
 
 let win: BrowserWindow | null;

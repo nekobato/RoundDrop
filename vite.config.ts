@@ -16,4 +16,7 @@ export default defineConfig({
       renderer: {},
     }),
   ],
+  resolve: {
+    alias: [{ find: "@/", replacement: `${__dirname}/src/` }],
+  },
 });

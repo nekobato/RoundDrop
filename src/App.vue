@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import RingCommand from "./components/RingCommand.vue";
+import RingCommand from "@/components/RingCommand.vue";
 
 const showCommand = ref(false);
 
