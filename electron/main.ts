@@ -6,6 +6,8 @@ import path from "node:path";
 app.disableHardwareAcceleration();
 
 let win: BrowserWindow | null;
+let isVisible = false;
+let isAnimation = false;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -18,7 +20,7 @@ function createWindow() {
     transparent: true,
     resizable: false,
     movable: false,
-    show: false,
+    show: true,
   });
 
   const { workArea } = require("electron").screen.getPrimaryDisplay();
@@ -29,7 +31,7 @@ function createWindow() {
     height: workArea.height,
   });
   win.setVisibleOnAllWorkspaces(true);
-  // win.setIgnoreMouseEvents(true);
+  win.setIgnoreMouseEvents(true);
 
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("main-process-message", new Date().toLocaleString());
@@ -40,7 +42,7 @@ function createWindow() {
   } else {
     win.loadFile(statics.pageRoot);
   }
-  win.webContents.openDevTools();
+  // win.webContents.openDevTools();
 }
 
 app.on("window-all-closed", () => {
@@ -65,23 +67,27 @@ app
   .then(createWindow)
   .then(() => {
     globalShortcut.register("Control+Alt+Z", () => {
-      if (win?.isVisible()) {
+      if (isAnimation) return;
+      isAnimation = true;
+      if (isVisible) {
         win?.webContents.send("ring:close");
-        console.log("Control+Alt+Z", "close");
+        isVisible = false;
       } else {
-        win?.show();
         win?.webContents.send("ring:open");
-        console.log("Control+Alt+Z", "open");
+        isVisible = true;
       }
     });
 
     ipcMain.on("ring:opened", () => {
+      console.log("ring:opened");
       win?.setIgnoreMouseEvents(false);
       win?.focus();
+      isAnimation = false;
     });
 
     ipcMain.on("ring:closed", () => {
+      console.log("ring:closed");
       win?.setIgnoreMouseEvents(true);
-      win?.hide();
+      isAnimation = false;
     });
   });

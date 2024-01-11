@@ -91,6 +91,8 @@ const onListTransitionEnd = () => {
     }, 0);
   }
 
+  console.log("onListTransitionEnd", props.visible);
+
   if (props.visible) {
     ringCommandList.value?.focus();
     window.ipc.send("ring:opened");
@@ -106,7 +108,11 @@ onMounted(() => {
 
 <template>
   <Transition name="ring" appear>
-    <div class="ring-command-container" v-show="props.visible">
+    <div
+      class="ring-command-container"
+      v-show="props.visible"
+      @transitionend="onListTransitionEnd"
+    >
       <div class="ring-command-list outer">
         <ul
           class="ring-command-list inner"
@@ -116,7 +122,7 @@ onMounted(() => {
           ref="ringCommandList"
           tabindex="0"
           :style="commandStyle"
-          @transitionend="onListTransitionEnd"
+          @transitionend.stop
         >
           <li
             v-for="(item, index) in commandList"
@@ -127,8 +133,9 @@ onMounted(() => {
                 index ===
                 (focusIndex < 0 ? itemLength + focusIndex : focusIndex),
             }"
+            @transitionend.stop
           >
-            <div class="ring-command-item inner">
+            <div class="ring-command-item inner" @transitionend.stop>
               <Icon
                 class="icon"
                 :icon="item.icon"
@@ -224,7 +231,8 @@ onMounted(() => {
     transform: rotate(120deg);
   }
   .ring-command-item {
-    transform: translateX(400px);
+    transform: translateX(640px);
+    opacity: 0.5;
   }
 }
 .ring-enter-active,
