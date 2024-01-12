@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import RingCommand from "@/components/RingCommand.vue";
 
 const showCommand = ref(false);
+const showConfig = ref(false);
+const commands = ref([]);
 
 window.ipc.on("ring:open", () => {
   showCommand.value = true;
@@ -10,6 +12,13 @@ window.ipc.on("ring:open", () => {
 
 window.ipc.on("ring:close", () => {
   showCommand.value = false;
+});
+
+onMounted(async () => {
+  commands.value = await window.ipc.invoke("get:commands");
+  if (commands.value.length === 0) {
+    showConfig.value = true;
+  }
 });
 </script>
 

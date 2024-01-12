@@ -1,5 +1,6 @@
 import { app, BrowserWindow, globalShortcut, ipcMain } from "electron";
 import * as statics from "./static";
+import { getShortcuts, setShortcuts, getCommands, setCommands } from "./store";
 import path from "node:path";
 
 // 残像防止
@@ -66,7 +67,8 @@ app
   .whenReady()
   .then(createWindow)
   .then(() => {
-    globalShortcut.register("Control+Alt+Z", () => {
+    const shortcuts = getShortcuts();
+    globalShortcut.register(shortcuts.toggleCommand, () => {
       if (isAnimation) return;
       isAnimation = true;
       if (isVisible) {
@@ -89,5 +91,21 @@ app
       console.log("ring:closed");
       win?.setIgnoreMouseEvents(true);
       isAnimation = false;
+    });
+
+    ipcMain.handle("get:shortcuts", () => {
+      return getShortcuts();
+    });
+
+    ipcMain.handle("set:shortcuts", (_, payload) => {
+      return setShortcuts(payload);
+    });
+
+    ipcMain.handle("get:commands", () => {
+      return getCommands();
+    });
+
+    ipcMain.handle("set:commands", (_, payload) => {
+      return setCommands(payload);
     });
   });
