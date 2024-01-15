@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, provide } from "vue";
 import RingCommand from "@/components/RingCommand.vue";
+import Config from "./components/Config.vue";
+import { defaultConfig } from "./utils";
 
+const config = ref(defaultConfig);
+provide("config", config);
 const showCommand = ref(false);
 const showConfig = ref(false);
-const commands = ref([]);
+
+const onChangeConfig = async () => {
+  config.value = await window.ipc.invoke("get:config");
+};
 
 window.ipc.on("ring:open", () => {
   showCommand.value = true;
@@ -14,25 +21,45 @@ window.ipc.on("ring:close", () => {
   showCommand.value = false;
 });
 
+window.ipc.on("ring:config", () => {
+  showCommand.value = false;
+  showConfig.value = true;
+});
+
 onMounted(async () => {
-  commands.value = await window.ipc.invoke("get:commands");
-  if (commands.value.length === 0) {
+  window.postMessage("removeLoading");
+
+  config.value = await window.ipc.invoke("get:config");
+  console.log(config.value);
+  if (config.value.commands.length === 0) {
     showConfig.value = true;
   }
 });
 </script>
 
 <template>
+  <div class="scrim" v-if="showCommand || showConfig" />
   <RingCommand class="ring-command" :visible="showCommand" />
+  <Config class="config" v-if="showConfig" @change="onChangeConfig" />
 </template>
 
 <style scoped>
-.button {
-  position: relative;
+.scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease-in-out;
 }
 .ring-command {
   position: absolute;
   top: calc(50% - 160px);
   left: calc(50% - 160px);
+}
+.config {
+  position: relative;
+  margin: auto;
 }
 </style>

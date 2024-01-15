@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Transition, computed, onMounted, ref } from "vue";
-import { Icon } from "@iconify/vue";
+import { Ref, Transition, computed, inject, onMounted, ref } from "vue";
+import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./CommandCursor.vue";
+import { Config } from "../types/app";
 
 const props = defineProps({
   visible: {
@@ -10,44 +11,11 @@ const props = defineProps({
   },
 });
 
-const commandList = [
-  {
-    icon: "logos:slack-icon",
-    name: "Slack",
-  },
-  {
-    icon: "logos:discord-icon",
-    name: "Discord",
-  },
-  {
-    icon: "logos:chrome",
-    name: "Chrome",
-  },
-  {
-    icon: "logos:google-calendar",
-    name: "Google Calendar",
-  },
-  {
-    icon: "logos:visual-studio-code",
-    name: "Visual Studio Code",
-  },
-  {
-    icon: "logos:figma",
-    name: "Figma",
-  },
-  {
-    icon: "logos:adobe-illustrator",
-    name: "Adobe Illustrator",
-  },
-  {
-    icon: "logos:spotify-icon",
-    name: "Spotify",
-  },
-];
+const config = inject<Ref<Config>>("config");
 
 const ringCommandList = ref<HTMLElement | null>(null);
 const focusIndex = ref(0);
-const itemLength = ref(8);
+const itemLength = computed(() => config?.value.commands.length || 1);
 const pauseTransition = ref(false);
 
 const commandStyle = computed(() => {
@@ -81,24 +49,37 @@ const onKeyDownLeft = () => {
   focusIndex.value -= 1;
 };
 
+const onKeyDownEnter = () => {
+  const item =
+    config?.value.commands[
+      focusIndex.value < 0
+        ? itemLength.value + focusIndex.value
+        : focusIndex.value
+    ];
+  console.log(item?.command, focusIndex.value, itemLength.value);
+  if (item?.command) {
+    window.ipc.send("open-path", item.command);
+  }
+};
+
 // 大きすぎる値にならないように止まった時点でリセットする
 const onListTransitionEnd = () => {
   if (Math.abs(focusIndex.value) >= itemLength.value) {
-    pauseTransition.value = true;
     focusIndex.value = Math.abs(focusIndex.value) % itemLength.value;
+    pauseTransition.value = true;
     setTimeout(() => {
       pauseTransition.value = false;
     }, 0);
   }
+};
 
-  console.log("onListTransitionEnd", props.visible);
+const onAfterEnter = () => {
+  ringCommandList.value?.focus();
+  window.ipc.send("ring:opened");
+};
 
-  if (props.visible) {
-    ringCommandList.value?.focus();
-    window.ipc.send("ring:opened");
-  } else {
-    window.ipc.send("ring:closed");
-  }
+const onAfterLeave = () => {
+  window.ipc.send("ring:closed");
 };
 
 onMounted(() => {
@@ -107,12 +88,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <Transition name="ring" appear>
-    <div
-      class="ring-command-container"
-      v-show="props.visible"
-      @transitionend="onListTransitionEnd"
-    >
+  <Transition
+    name="ring"
+    appear
+    @after-leave="onAfterLeave"
+    @after-enter="onAfterEnter"
+    v-if="config"
+  >
+    <div class="ring-command-container" v-show="props.visible">
       <div class="ring-command-list outer">
         <ul
           class="ring-command-list inner"
@@ -122,10 +105,11 @@ onMounted(() => {
           ref="ringCommandList"
           tabindex="0"
           :style="commandStyle"
-          @transitionend.stop
+          @transitionend.stop="onListTransitionEnd"
+          @keydown.enter="onKeyDownEnter"
         >
           <li
-            v-for="(item, index) in commandList"
+            v-for="(item, index) in config.commands"
             :key="index"
             :style="commandItemStyle(index)"
             :class="{
@@ -136,11 +120,10 @@ onMounted(() => {
             @transitionend.stop
           >
             <div class="ring-command-item inner" @transitionend.stop>
-              <Icon
+              <AppIcon
                 class="icon"
-                :icon="item.icon"
-                :width="48"
-                :height="48"
+                :image="item.icon"
+                :iconSize="config.iconSize"
                 :style="commandItemIconStyle(index)"
               />
               <span class="name">{{ item.name }}</span>
@@ -176,6 +159,9 @@ onMounted(() => {
 
   &.pause {
     transition: none;
+    > li {
+      transition: none;
+    }
 
     .icon {
       transition: none;
@@ -200,21 +186,21 @@ onMounted(() => {
     &.focus .name {
       visibility: visible;
     }
-
-    > svg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
-      transform-origin: 50% 50%;
-      will-change: transform;
-    }
   }
 }
 .cursor {
   position: absolute;
   top: -4px;
   left: calc(50% - 28px);
+}
+
+.icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 .name {
   position: absolute;
