@@ -7,6 +7,10 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=8"
+  },
   "dependencies": {
     "@fiahfy/icns": "^0.0.7",
     "electron-store": "^8.1.0"
