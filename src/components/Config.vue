@@ -8,13 +8,46 @@ const config = inject<Ref<Config>>("config");
 const emit = defineEmits(["change"]);
 const drag = ref(false);
 
+const onKeyDownOnShortcut = async (e: KeyboardEvent) => {
+  let shortcut = "";
+  shortcut += e.metaKey ? "Meta+" : "";
+  shortcut += e.ctrlKey ? "Ctrl+" : "";
+  shortcut += e.shiftKey ? "Shift+" : "";
+  shortcut += e.altKey ? "Alt+" : "";
+
+  if (
+    e.key !== "Meta" &&
+    e.key !== "Ctrl" &&
+    e.key !== "Shift" &&
+    e.key !== "Alt"
+  ) {
+    shortcut += e.key === " " ? "Space" : e.key;
+  }
+
+  if (shortcut === "" || shortcut === config?.value.shortcuts.toggleCommand) {
+    return;
+  }
+
+  window.ipc.invoke("set:shortcut", {
+    name: "toggleCommand",
+    command: shortcut
+  });
+};
+
+const onChangeShortcut = async (e: Event) => {
+  await window.ipc.invoke("set:shortcuts", {
+    name: "toggleCommand",
+    command: (e.target as HTMLInputElement).value
+  });
+};
+
 const onDrop = async (e: DragEvent | Event) => {
   e.preventDefault();
   const file = (e as DragEvent).dataTransfer?.files[0];
   if (file?.path && file.path.split(".").pop() === "app") {
     await window.ipc.invoke("add:appCommand", {
       name: file.name,
-      appPath: file.path,
+      appPath: file.path
     });
     emit("change");
   }
@@ -30,6 +63,8 @@ const onDrop = async (e: DragEvent | Event) => {
           id="shortcut"
           type="text"
           :value="config?.shortcuts.toggleCommand"
+          @keydown.prevent="onKeyDownOnShortcut"
+          @change="onChangeShortcut"
         />
       </div>
       <div class="input-field">
