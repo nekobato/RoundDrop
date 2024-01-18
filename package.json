@@ -2,9 +2,16 @@
   "name": "ringcommand",
   "private": true,
   "version": "0.0.0",
+  "author": {
+    "name": "nekobato",
+    "email": "nekobato@gmail.com",
+    "url": "https://nekobato.net"
+  },
+  "license": "MIT",
+  "description": "Ring UI Application Launcher for macOS",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build": "vue-tsc && vite build && electron-builder",
     "preview": "vite preview"
   },
   "engines": {
@@ -19,7 +26,7 @@
     "@iconify/vue": "^4.1.1",
     "@types/node": "^20.10.6",
     "@vitejs/plugin-vue": "^4.5.2",
-    "electron": "^26.1.0",
+    "electron": "^28.1.4",
     "electron-builder": "^24.6.4",
     "sass": "^1.69.5",
     "typescript": "^5.2.2",
