@@ -1,44 +1,41 @@
 <script setup lang="ts">
 import { Ref, inject, ref } from "vue";
+import { Icon } from "@iconify/vue";
 import ConfigCommandList from "./ConfigCommandList.vue";
 import { Config } from "@/types/app";
+import { keyboardEventToElectronAccelerator } from "@/utils";
 
 // buffer to base64 on browser
 const config = inject<Ref<Config>>("config");
-const emit = defineEmits(["change"]);
+const emit = defineEmits(["change", "close"]);
 const drag = ref(false);
 
 const onKeyDownOnShortcut = async (e: KeyboardEvent) => {
-  let shortcut = "";
-  shortcut += e.metaKey ? "Meta+" : "";
-  shortcut += e.ctrlKey ? "Ctrl+" : "";
-  shortcut += e.shiftKey ? "Shift+" : "";
-  shortcut += e.altKey ? "Alt+" : "";
-
-  if (
-    e.key !== "Meta" &&
-    e.key !== "Ctrl" &&
-    e.key !== "Shift" &&
-    e.key !== "Alt"
-  ) {
-    shortcut += e.key === " " ? "Space" : e.key;
-  }
+  const shortcut = keyboardEventToElectronAccelerator(e);
 
   if (shortcut === "" || shortcut === config?.value.shortcuts.toggleCommand) {
     return;
   }
 
-  window.ipc.invoke("set:shortcut", {
-    name: "toggleCommand",
-    command: shortcut
-  });
+  if (config) {
+    config.value.shortcuts.toggleCommand = shortcut;
+    await window.ipc.invoke("set:shortcuts", {
+      name: "toggleCommand",
+      command: shortcut
+    });
+  }
 };
 
-const onChangeShortcut = async (e: Event) => {
-  await window.ipc.invoke("set:shortcuts", {
-    name: "toggleCommand",
-    command: (e.target as HTMLInputElement).value
-  });
+const onChangeIconSize = async (e: Event) => {
+  const size = (e.target as HTMLInputElement).value;
+  if (config) {
+    config.value.iconSize = Number(size);
+    await window.ipc.invoke("set:iconSize", Number(size));
+  }
+};
+
+const closeConfig = () => {
+  emit("close");
 };
 
 const onDrop = async (e: DragEvent | Event) => {
@@ -56,46 +53,47 @@ const onDrop = async (e: DragEvent | Event) => {
 
 <template>
   <div class="config">
-    <div class="options">
-      <div class="input-field">
-        <label for="shortcut">リング呼び出し/戻しショートカット</label>
-        <input
-          id="shortcut"
-          type="text"
-          :value="config?.shortcuts.toggleCommand"
-          @keydown.prevent="onKeyDownOnShortcut"
-          @change="onChangeShortcut"
-        />
-      </div>
-      <div class="input-field">
-        <label for="icon-size">アイコンサイズ: {{}}</label>
-        <input
-          id="icon-size"
-          type="range"
-          min="0"
-          max="3"
-          :value="config?.iconSize"
-        />
-      </div>
+    <div class="header">
+      <button @click="closeConfig">
+        <Icon icon="mingcute:close-fill" color="#ffffff" />
+      </button>
     </div>
-    <div class="command-list-container">
-      <div
-        class="drop-area"
-        :class="{ drag }"
-        @dragover.prevent="drag = true"
-        @dragleave.prevent="drag = false"
-        @drop.prevent="onDrop"
-      >
-        <input
-          class="input"
-          type="file"
-          accept=".app"
-          ref="fileInput"
-          @change="onDrop"
-        />
-        <p>Drop your app here</p>
+    <div class="config-contents">
+      <div class="options">
+        <div class="input-field">
+          <label for="shortcut">リング呼び出し/戻しショートカット</label>
+          <input
+            id="shortcut"
+            type="text"
+            :value="config?.shortcuts.toggleCommand"
+            @keydown.prevent="onKeyDownOnShortcut"
+          />
+        </div>
+        <div class="input-field">
+          <label for="icon-size">アイコンサイズ: {{}}</label>
+          <input
+            id="icon-size"
+            type="range"
+            min="0"
+            max="3"
+            :value="config?.iconSize"
+            @change="onChangeIconSize"
+          />
+        </div>
       </div>
-      <ConfigCommandList />
+      <div class="command-list-container">
+        <div
+          class="drop-area"
+          :class="{ drag }"
+          @dragover.prevent="drag = true"
+          @dragleave.prevent="drag = false"
+          @drop.prevent="onDrop"
+        >
+          <!-- <input class="input" type="file" ref="fileInput" @change="onDrop" /> -->
+          <p>Drop your app here</p>
+        </div>
+        <ConfigCommandList />
+      </div>
     </div>
   </div>
 </template>
@@ -106,9 +104,13 @@ const onDrop = async (e: DragEvent | Event) => {
   height: 480px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   display: grid;
-  grid-template-columns: 50% 50%;
+  grid-template-rows: 24px 1fr;
   border-radius: 8px;
   background-color: rgba(0, 0, 0, 0.5);
+}
+.config-contents {
+  display: grid;
+  grid-template-columns: 50% 50%;
 }
 .command-list-container {
   display: flex;
@@ -126,6 +128,10 @@ const onDrop = async (e: DragEvent | Event) => {
   border: 2px dashed rgba(255, 255, 255, 0.5);
   color: rgba(255, 255, 255, 0.5);
   border-radius: 8px;
+  cursor: pointer;
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.8);
+  }
   &.drag {
     border-color: rgba(255, 255, 255, 1);
   }

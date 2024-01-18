@@ -13,6 +13,11 @@ const onChangeConfig = async () => {
   config.value = await window.ipc.invoke("get:config");
 };
 
+const closeConfig = () => {
+  window.ipc.send("config:close");
+  showConfig.value = false;
+};
+
 window.ipc.on("ring:open", () => {
   showCommand.value = true;
 });
@@ -32,15 +37,23 @@ onMounted(async () => {
   config.value = await window.ipc.invoke("get:config");
   console.log(config.value);
   if (config.value.commands.length === 0) {
+    window.ipc.send("config:open");
     showConfig.value = true;
   }
+
+  window.removeLoading();
 });
 </script>
 
 <template>
   <div class="scrim" v-if="showCommand || showConfig" />
   <RingCommand class="ring-command" :visible="showCommand" />
-  <Config class="config" v-if="showConfig" @change="onChangeConfig" />
+  <Config
+    class="config"
+    v-if="showConfig"
+    @change="onChangeConfig"
+    @close="closeConfig"
+  />
 </template>
 
 <style scoped>

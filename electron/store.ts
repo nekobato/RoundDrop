@@ -4,18 +4,18 @@ export const store = new Store({
   name: "config",
   defaults: {
     shortcuts: {
-      toggleCommand: "Control+Alt+Z",
+      toggleCommand: "Control+Alt+Z"
     },
     iconSize: 1,
-    commands: [],
-  },
+    commands: []
+  }
 });
 
 export const getConfig = () => {
   return {
     shortcuts: store.get("shortcuts"),
     iconSize: store.get("iconSize"),
-    commands: store.get("commands"),
+    commands: store.get("commands")
   };
 };
 
@@ -25,6 +25,10 @@ export const getShortcuts = () => {
 
 export const setShortcut = ({ name, command }) => {
   store.set(`shortcuts.${name}`, command);
+};
+
+export const setIconSize = (iconSize) => {
+  store.set("iconSize", iconSize);
 };
 
 export const getCommands = () => {
@@ -44,7 +48,7 @@ export const addCommand = (newCommand: {
     ...getCommands(),
     {
       ...newCommand,
-      icon: Buffer.from(newCommand.icon).toString("base64"),
-    },
+      icon: Buffer.from(newCommand.icon).toString("base64")
+    }
   ]);
 };

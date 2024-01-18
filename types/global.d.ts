@@ -9,9 +9,10 @@ declare global {
       invoke: (event: string, payload?: any) => Promise<any>;
       on: (
         event: string,
-        callback: (event: IpcRendererEvent, ...args: any[]) => void,
+        callback: (event: IpcRendererEvent, ...args: any[]) => void
       ) => void;
     };
     openUrl: (e: Event, url: string) => void;
+    removeLoading: () => void;
   }
 }

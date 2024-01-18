@@ -9,10 +9,10 @@ contextBridge.exposeInMainWorld("ipc", {
   },
   on(
     event: string,
-    callback: (event: IpcRendererEvent, ...args: any[]) => void,
+    callback: (event: IpcRendererEvent, ...args: any[]) => void
   ) {
     ipcRenderer.on(event, callback);
-  },
+  }
 });
 
 contextBridge.exposeInMainWorld("openUrl", (e: Event, url: string) => {
@@ -20,8 +20,12 @@ contextBridge.exposeInMainWorld("openUrl", (e: Event, url: string) => {
   ipcRenderer.send("open-url", { data: url });
 });
 
+contextBridge.exposeInMainWorld("removeLoading", () => {
+  removeLoading();
+});
+
 function domReady(
-  condition: DocumentReadyState[] = ["complete", "interactive"],
+  condition: DocumentReadyState[] = ["complete", "interactive"]
 ) {
   return new Promise((resolve) => {
     if (condition.includes(document.readyState)) {
@@ -46,7 +50,7 @@ const safeDOM = {
     if (Array.from(parent.children).find((e) => e === child)) {
       parent.removeChild(child);
     }
-  },
+  }
 };
 
 /**
@@ -100,15 +104,9 @@ function useLoading() {
     removeLoading() {
       safeDOM.remove(document.head, oStyle);
       safeDOM.remove(document.body, oDiv);
-    },
+    }
   };
 }
 
 const { appendLoading, removeLoading } = useLoading();
 domReady().then(appendLoading);
-
-window.onmessage = (ev) => {
-  ev.data.payload === "removeLoading" && removeLoading();
-};
-
-setTimeout(removeLoading, 4999);
