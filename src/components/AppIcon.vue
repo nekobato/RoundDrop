@@ -3,12 +3,12 @@ import { computed } from "vue";
 const props = defineProps({
   image: {
     type: String,
-    required: true,
+    required: true
   },
   iconSize: {
     type: Number,
-    required: true,
-  },
+    required: true
+  }
 });
 
 const image = computed(() => {
@@ -23,6 +23,7 @@ const image = computed(() => {
 </template>
 <style scoped lang="scss">
 .image-container {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 8px;

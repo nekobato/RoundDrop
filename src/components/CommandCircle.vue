@@ -24,6 +24,16 @@ const commandStyle = computed(() => {
   };
 });
 
+const iconName = computed(() => {
+  const item =
+    config?.value.commands[
+      focusIndex.value < 0
+        ? itemLength.value + focusIndex.value
+        : focusIndex.value
+    ];
+  return item?.name;
+});
+
 const commandItemStyle = (index: number) => {
   const angle = (index * 360) / itemLength.value;
   return {
@@ -56,7 +66,6 @@ const onKeyDownEnter = () => {
         ? itemLength.value + focusIndex.value
         : focusIndex.value
     ];
-  console.log(item?.command, focusIndex.value, itemLength.value);
   if (item?.command) {
     window.ipc.send("open-path", item.command);
   }
@@ -112,11 +121,14 @@ onMounted(() => {
             v-for="(item, index) in config.commands"
             :key="index"
             :style="commandItemStyle(index)"
-            :class="{
-              focus:
-                index ===
-                (focusIndex < 0 ? itemLength + focusIndex : focusIndex)
-            }"
+            :class="[
+              {
+                focus:
+                  index ===
+                  (focusIndex < 0 ? itemLength + focusIndex : focusIndex)
+              },
+              `size-${config.iconSize}`
+            ]"
             @transitionend.stop
           >
             <div class="ring-command-item inner" @transitionend.stop>
@@ -126,12 +138,14 @@ onMounted(() => {
                 :iconSize="config.iconSize"
                 :style="commandItemIconStyle(index)"
               />
-              <span class="name">{{ item.name }}</span>
             </div>
           </li>
         </ul>
       </div>
-      <CommandCursor class="cursor" />
+      <CommandCursor class="cursor" :class="`size-${config.iconSize}`" />
+      <span class="name" :class="`size-${config.iconSize}`">{{
+        iconName
+      }}</span>
     </div>
   </Transition>
 </template>
@@ -173,11 +187,10 @@ onMounted(() => {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 48px;
+    width: 100%;
     height: 100%;
     position: absolute;
     top: 0;
-    left: calc(50% - 24px);
     transform-origin: 0 50%;
     transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
     transform-origin: 50% 50%;
@@ -186,12 +199,47 @@ onMounted(() => {
     &.focus .name {
       visibility: visible;
     }
+    &.size-0 {
+      width: 24px;
+      left: calc(50% - 12px);
+    }
+    &.size-1 {
+      width: 32px;
+      left: calc(50% - 16px);
+    }
+    &.size-2 {
+      width: 48px;
+      left: calc(50% - 24px);
+    }
+    &.size-3 {
+      width: 64px;
+      left: calc(50% - 32px);
+    }
   }
 }
 .cursor {
   position: absolute;
   top: -4px;
-  left: calc(50% - 28px);
+  &.size-0 {
+    width: 32px;
+    height: 32px;
+    left: calc(50% - 16px);
+  }
+  &.size-1 {
+    width: 40px;
+    height: 40px;
+    left: calc(50% - 20px);
+  }
+  &.size-2 {
+    width: 56px;
+    height: 56px;
+    left: calc(50% - 28px);
+  }
+  &.size-3 {
+    width: 72px;
+    height: 72px;
+    left: calc(50% - 36px);
+  }
 }
 
 .icon {
@@ -203,11 +251,27 @@ onMounted(() => {
   will-change: transform;
 }
 .name {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
   position: absolute;
-  top: 56px;
   font-size: 12px;
   font-weight: bold;
-  visibility: hidden;
+  color: #ffffff;
+
+  &.size-0 {
+    top: 32px;
+  }
+  &.size-1 {
+    top: 40px;
+  }
+  &.size-2 {
+    top: 56px;
+  }
+  &.size-3 {
+    top: 72px;
+  }
 }
 
 // animation

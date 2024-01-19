@@ -112,7 +112,7 @@ function createWindow() {
     webPreferences: {
       preload: statics.preload
     },
-    // alwaysOnTop: true,
+    alwaysOnTop: true,
     frame: false,
     transparent: true,
     resizable: false,
@@ -139,8 +139,10 @@ function createWindow() {
   } else {
     win.loadFile(statics.pageRoot);
   }
-  // win.setIgnoreMouseEvents(true);
-  win.webContents.openDevTools();
+  win.setIgnoreMouseEvents(true);
+  if (statics.VITE_DEV_SERVER_URL) {
+    win.webContents.openDevTools();
+  }
 }
 
 app.on("window-all-closed", () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ref, inject, ref } from "vue";
+import { Ref, computed, inject, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import ConfigCommandList from "./ConfigCommandList.vue";
 import { Config } from "@/types/app";
@@ -10,6 +10,16 @@ const config = inject<Ref<Config>>("config");
 const emit = defineEmits(["change", "close"]);
 const drag = ref(false);
 const shortcutInput = ref<HTMLInputElement>();
+const dropAreaErrorMessage = ref("");
+
+const iconSize = computed(() => {
+  const sizes = ["24", "32", "48", "64"];
+  if (config?.value.iconSize !== undefined) {
+    return sizes[config.value.iconSize];
+  } else {
+    return "--";
+  }
+});
 
 const onKeyDownOnShortcut = async (e: KeyboardEvent) => {
   const shortcut = keyboardEventToElectronAccelerator(e);
@@ -56,12 +66,23 @@ const onDrop = async (e: DragEvent | Event) => {
       appPath: file.path
     });
     if (result?.error) {
-      console.error(result.error);
+      dropAreaErrorMessage.value = result.error;
     }
     drag.value = false;
     emit("change");
+  } else {
+    dropAreaErrorMessage.value = "Only .app file is allowed.";
   }
 };
+
+watch(
+  () => dropAreaErrorMessage.value,
+  () => {
+    setTimeout(() => {
+      dropAreaErrorMessage.value = "";
+    }, 2000);
+  }
+);
 </script>
 
 <template>
@@ -86,7 +107,7 @@ const onDrop = async (e: DragEvent | Event) => {
           />
         </div>
         <div class="input-field">
-          <label for="icon-size">アイコンサイズ: {{}}</label>
+          <label for="icon-size">アイコンサイズ: {{ iconSize }}</label>
           <input
             id="icon-size"
             type="range"
@@ -105,8 +126,8 @@ const onDrop = async (e: DragEvent | Event) => {
           @dragleave.prevent="drag = false"
           @drop.prevent="onDrop"
         >
-          <!-- <input class="input" type="file" ref="fileInput" @change="onDrop" /> -->
-          <p>Drop your app here</p>
+          <p v-if="dropAreaErrorMessage">{{ dropAreaErrorMessage }}</p>
+          <p v-else>Drop your app here</p>
         </div>
         <ConfigCommandList @change="emitChange" />
       </div>
