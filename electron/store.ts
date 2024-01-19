@@ -7,7 +7,12 @@ export const store = new Store({
       toggleCommand: "Control+Alt+Z"
     },
     iconSize: 1,
-    commands: []
+    commands: [] as {
+      id: string;
+      name: string;
+      command: string;
+      icon: string;
+    }[]
   }
 });
 
@@ -37,18 +42,4 @@ export const getCommands = () => {
 
 export const setCommands = (commands) => {
   store.set("commands", commands);
-};
-
-export const addCommand = (newCommand: {
-  name: string;
-  command: string;
-  icon: Uint8Array;
-}) => {
-  setCommands([
-    ...getCommands(),
-    {
-      ...newCommand,
-      icon: Buffer.from(newCommand.icon).toString("base64")
-    }
-  ]);
 };

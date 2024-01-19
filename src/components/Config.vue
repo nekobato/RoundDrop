@@ -9,6 +9,7 @@ import { keyboardEventToElectronAccelerator } from "@/utils";
 const config = inject<Ref<Config>>("config");
 const emit = defineEmits(["change", "close"]);
 const drag = ref(false);
+const shortcutInput = ref<HTMLInputElement>();
 
 const onKeyDownOnShortcut = async (e: KeyboardEvent) => {
   const shortcut = keyboardEventToElectronAccelerator(e);
@@ -18,34 +19,46 @@ const onKeyDownOnShortcut = async (e: KeyboardEvent) => {
   }
 
   if (config) {
-    config.value.shortcuts.toggleCommand = shortcut;
     await window.ipc.invoke("set:shortcuts", {
       name: "toggleCommand",
       command: shortcut
     });
+    emit("change");
   }
 };
 
 const onChangeIconSize = async (e: Event) => {
   const size = (e.target as HTMLInputElement).value;
   if (config) {
-    config.value.iconSize = Number(size);
     await window.ipc.invoke("set:iconSize", Number(size));
+    emit("change");
   }
+};
+
+const emitChange = () => {
+  emit("change");
 };
 
 const closeConfig = () => {
   emit("close");
 };
 
+const focusShortcutInput = () => {
+  shortcutInput.value?.focus();
+};
+
 const onDrop = async (e: DragEvent | Event) => {
   e.preventDefault();
   const file = (e as DragEvent).dataTransfer?.files[0];
   if (file?.path && file.path.split(".").pop() === "app") {
-    await window.ipc.invoke("add:appCommand", {
+    const result = await window.ipc.invoke("add:appCommand", {
       name: file.name,
       appPath: file.path
     });
+    if (result?.error) {
+      console.error(result.error);
+    }
+    drag.value = false;
     emit("change");
   }
 };
@@ -54,7 +67,7 @@ const onDrop = async (e: DragEvent | Event) => {
 <template>
   <div class="config">
     <div class="header">
-      <button @click="closeConfig">
+      <button class="close-button" @click="closeConfig">
         <Icon icon="mingcute:close-fill" color="#ffffff" />
       </button>
     </div>
@@ -67,6 +80,9 @@ const onDrop = async (e: DragEvent | Event) => {
             type="text"
             :value="config?.shortcuts.toggleCommand"
             @keydown.prevent="onKeyDownOnShortcut"
+            readonly
+            @click="focusShortcutInput"
+            ref="shortcutInput"
           />
         </div>
         <div class="input-field">
@@ -92,7 +108,7 @@ const onDrop = async (e: DragEvent | Event) => {
           <!-- <input class="input" type="file" ref="fileInput" @change="onDrop" /> -->
           <p>Drop your app here</p>
         </div>
-        <ConfigCommandList />
+        <ConfigCommandList @change="emitChange" />
       </div>
     </div>
   </div>
@@ -108,15 +124,30 @@ const onDrop = async (e: DragEvent | Event) => {
   border-radius: 8px;
   background-color: rgba(0, 0, 0, 0.5);
 }
+.close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 24px;
+  background-color: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+}
 .config-contents {
   display: grid;
   grid-template-columns: 50% 50%;
+  overflow-y: auto;
 }
 .command-list-container {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px;
+  overflow-y: scroll;
 }
 .drop-area {
   width: 100%;
@@ -128,10 +159,6 @@ const onDrop = async (e: DragEvent | Event) => {
   border: 2px dashed rgba(255, 255, 255, 0.5);
   color: rgba(255, 255, 255, 0.5);
   border-radius: 8px;
-  cursor: pointer;
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.8);
-  }
   &.drag {
     border-color: rgba(255, 255, 255, 1);
   }

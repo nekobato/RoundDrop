@@ -8,6 +8,7 @@ import {
   type MenuItem
 } from "electron";
 import { Icns } from "@fiahfy/icns";
+import plist from "plist";
 import * as statics from "./static";
 import {
   getConfig,
@@ -17,6 +18,7 @@ import {
   getCommands,
   setCommands
 } from "./store";
+import { nanoid } from "nanoid/non-secure";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -216,15 +218,35 @@ app
 
     ipcMain.handle("add:appCommand", (_, { name, appPath }) => {
       console.log(appPath, name);
-      const appDirFiles = fs.readdirSync(
-        path.join(appPath, "Contents/Resources")
-      );
-      const iconPath = appDirFiles.find((file) => file.endsWith(".icns"));
-      console.log(iconPath);
-      if (!iconPath) return;
+      let iconFileName: string | undefined = undefined;
+      try {
+        const xml = fs.readFileSync(
+          path.join(appPath, "Contents/Info.plist"),
+          "utf8"
+        );
+        iconFileName = plist.parse(xml)?.CFBundleIconFile;
+        if (!iconFileName?.endsWith(".icns")) {
+          iconFileName = iconFileName + ".icns";
+        }
+      } catch (e) {
+        console.log(e);
+      }
+
+      if (!iconFileName) {
+        const appDirFiles = fs.readdirSync(
+          path.join(appPath, "Contents/Resources")
+        );
+        iconFileName = appDirFiles.find((file) => file.endsWith(".icns"));
+      }
+
+      if (!iconFileName) {
+        return {
+          error: "Icon not found."
+        };
+      }
 
       const icons = Icns.from(
-        fs.readFileSync(path.join(appPath, "Contents/Resources", iconPath))
+        fs.readFileSync(path.join(appPath, "Contents/Resources", iconFileName))
       ).images;
       const base64Data = Buffer.from(
         // biggest icon
@@ -235,11 +257,21 @@ app
       setCommands([
         ...getCommands(),
         {
+          id: nanoid(),
           name: name.replace(".app", ""),
           command: appPath,
           icon: base64Data
         }
       ]);
+      return;
+    });
+
+    ipcMain.handle("delete:command", (_, id) => {
+      const commands = getCommands();
+      const newCommands = commands.filter((command) => {
+        return command.id !== id;
+      });
+      setCommands(newCommands);
     });
 
     ipcMain.on("open-path", (_, path) => {
