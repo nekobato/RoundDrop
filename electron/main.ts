@@ -36,8 +36,8 @@ function openConfig() {
   isVisible = true;
   win?.setSize(640, 480);
   win?.show();
-  win?.focus();
   win?.center();
+  win?.focus();
   globalShortcut.unregisterAll();
 }
 
@@ -53,6 +53,7 @@ function closeConfig() {
   });
   win?.setIgnoreMouseEvents(true);
   win?.setVisibleOnAllWorkspaces(true);
+  win?.blur();
   setGlobalShortcut();
 }
 
@@ -82,7 +83,9 @@ function setMenu() {
       submenu: [
         {
           label: "Config",
-          click: openConfig
+          click: () => {
+            openConfig();
+          }
         },
         {
           type: "separator"
@@ -90,7 +93,7 @@ function setMenu() {
         {
           label: "Quit",
           accelerator: "Command+Q",
-          click: function () {
+          click: () => {
             app.quit();
           }
         }
@@ -182,8 +185,9 @@ app
     ipcMain.on("ring:closed", () => {
       console.log("ring:closed");
       win?.setIgnoreMouseEvents(true);
-      isAnimation = false;
       win?.hide();
+      win?.blur();
+      isAnimation = false;
     });
 
     ipcMain.on("config:open", () => {
