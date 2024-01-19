@@ -1,5 +1,5 @@
 {
-  "name": "ringcommand",
+  "name": "command-circle",
   "private": true,
   "version": "0.0.0",
   "author": {
@@ -28,7 +28,6 @@
     "@vitejs/plugin-vue": "^4.5.2",
     "electron": "^28.1.4",
     "electron-builder": "^24.6.4",
-    "fast-xml-parser": "^4.3.3",
     "nanoid": "^5.0.4",
     "plist": "^3.1.0",
     "sass": "^1.69.5",

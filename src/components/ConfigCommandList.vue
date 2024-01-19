@@ -46,12 +46,18 @@ ul.command-list {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     position: relative;
+    &:hover {
+      .delete-button {
+        visibility: visible;
+      }
+    }
   }
 }
 .name {
   margin-left: 8px;
 }
 .delete-button {
+  visibility: hidden;
   position: absolute;
   display: inline-flex;
   align-items: center;

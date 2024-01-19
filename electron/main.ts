@@ -78,7 +78,7 @@ function setGlobalShortcut() {
 function setMenu() {
   const template: (MenuItemConstructorOptions | MenuItem)[] = [
     {
-      label: "RingCommand",
+      label: "CommandCircle",
       submenu: [
         {
           label: "Config",

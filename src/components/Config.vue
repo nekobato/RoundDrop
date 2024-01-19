@@ -148,10 +148,12 @@ const onDrop = async (e: DragEvent | Event) => {
   flex-direction: column;
   gap: 8px;
   overflow-y: scroll;
+  flex-shrink: 0;
 }
 .drop-area {
   width: 100%;
   height: 80px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;

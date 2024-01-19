@@ -7,27 +7,27 @@ import { Config } from "../types/app";
 const props = defineProps({
   visible: {
     type: Boolean,
-    required: true,
-  },
+    required: true
+  }
 });
 
 const config = inject<Ref<Config>>("config");
 
-const ringCommandList = ref<HTMLElement | null>(null);
+const commandList = ref<HTMLElement | null>(null);
 const focusIndex = ref(0);
 const itemLength = computed(() => config?.value.commands.length || 1);
 const pauseTransition = ref(false);
 
 const commandStyle = computed(() => {
   return {
-    transform: `rotate(${(360 / itemLength.value) * -focusIndex.value}deg)`,
+    transform: `rotate(${(360 / itemLength.value) * -focusIndex.value}deg)`
   };
 });
 
 const commandItemStyle = (index: number) => {
   const angle = (index * 360) / itemLength.value;
   return {
-    transform: `rotate(${angle}deg)`,
+    transform: `rotate(${angle}deg)`
   };
 };
 
@@ -37,7 +37,7 @@ const commandItemIconStyle = (index: number) => {
     (focusIndex.value * 360) / itemLength.value
   );
   return {
-    transform: `rotate(${angle}deg)`,
+    transform: `rotate(${angle}deg)`
   };
 };
 
@@ -74,7 +74,7 @@ const onListTransitionEnd = () => {
 };
 
 const onAfterEnter = () => {
-  ringCommandList.value?.focus();
+  commandList.value?.focus();
   window.ipc.send("ring:opened");
 };
 
@@ -83,7 +83,7 @@ const onAfterLeave = () => {
 };
 
 onMounted(() => {
-  ringCommandList.value?.focus();
+  commandList.value?.focus();
 });
 </script>
 
@@ -102,7 +102,7 @@ onMounted(() => {
           :class="{ pause: pauseTransition }"
           @keydown.right="onKeyDownRight"
           @keydown.left="onKeyDownLeft"
-          ref="ringCommandList"
+          ref="commandList"
           tabindex="0"
           :style="commandStyle"
           @transitionend.stop="onListTransitionEnd"
@@ -115,7 +115,7 @@ onMounted(() => {
             :class="{
               focus:
                 index ===
-                (focusIndex < 0 ? itemLength + focusIndex : focusIndex),
+                (focusIndex < 0 ? itemLength + focusIndex : focusIndex)
             }"
             @transitionend.stop
           >
