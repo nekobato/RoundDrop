@@ -8,6 +8,10 @@ const props = defineProps({
   visible: {
     type: Boolean,
     required: true
+  },
+  noTransition: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -82,12 +86,22 @@ const onListTransitionEnd = () => {
   }
 };
 
+const close = () => {
+  window.ipc.send("ring:toggle");
+};
+
 const onAfterEnter = () => {
+  if (props.noTransition) {
+    return;
+  }
   commandList.value?.focus();
   window.ipc.send("ring:opened");
 };
 
 const onAfterLeave = () => {
+  if (props.noTransition) {
+    return;
+  }
   window.ipc.send("ring:closed");
 };
 
@@ -111,6 +125,7 @@ onMounted(() => {
           :class="{ pause: pauseTransition }"
           @keydown.right="onKeyDownRight"
           @keydown.left="onKeyDownLeft"
+          @keydown.esc="close"
           ref="commandList"
           tabindex="0"
           :style="commandStyle"
@@ -151,10 +166,11 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+$animation-duration: 0.3s;
 .ring-command-container {
   width: 320px;
   height: 320px;
-  transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  transition: transform $animation-duration cubic-bezier(0.215, 0.61, 0.355, 1);
   will-change: transform;
 }
 .ring-command-list {
@@ -166,7 +182,7 @@ onMounted(() => {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  transition: transform $animation-duration cubic-bezier(0.215, 0.61, 0.355, 1);
   transform-origin: 50% 50%;
   will-change: transform;
   outline: none;
@@ -192,7 +208,8 @@ onMounted(() => {
     position: absolute;
     top: 0;
     transform-origin: 0 50%;
-    transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+    transition: transform $animation-duration
+      cubic-bezier(0.215, 0.61, 0.355, 1);
     transform-origin: 50% 50%;
     will-change: transform;
 
@@ -246,7 +263,7 @@ onMounted(() => {
   position: absolute;
   top: 0;
   left: 0;
-  transition: transform 0.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  transition: transform $animation-duration cubic-bezier(0.215, 0.61, 0.355, 1);
   transform-origin: 50% 50%;
   will-change: transform;
 }

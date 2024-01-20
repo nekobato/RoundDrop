@@ -57,23 +57,25 @@ function closeConfig() {
   setGlobalShortcut();
 }
 
+function toggleRing() {
+  if (isAnimation) return;
+  isAnimation = true;
+  if (isVisible) {
+    win?.webContents.send("ring:close");
+    isVisible = false;
+  } else {
+    win?.webContents.send("ring:open");
+    isVisible = true;
+    win?.show();
+  }
+}
+
 function setGlobalShortcut() {
   const shortcuts = getShortcuts();
   if (globalShortcut.isRegistered(shortcuts.toggleCommand)) {
     globalShortcut.unregister(shortcuts.toggleCommand);
   }
-  globalShortcut.register(shortcuts.toggleCommand, () => {
-    if (isAnimation) return;
-    isAnimation = true;
-    if (isVisible) {
-      win?.webContents.send("ring:close");
-      isVisible = false;
-    } else {
-      win?.webContents.send("ring:open");
-      isVisible = true;
-      win?.show();
-    }
-  });
+  globalShortcut.register(shortcuts.toggleCommand, toggleRing);
 }
 
 function setMenu() {
@@ -174,6 +176,8 @@ app
     if (config.commands.length !== 0) {
       setGlobalShortcut();
     }
+
+    ipcMain.on("ring:toggle", toggleRing);
 
     ipcMain.on("ring:opened", () => {
       console.log("ring:opened");

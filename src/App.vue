@@ -47,7 +47,11 @@ onMounted(async () => {
 
 <template>
   <div class="scrim" v-if="showCommand || showConfig" />
-  <CommandCircle class="ring-command" :visible="showCommand" />
+  <CommandCircle
+    class="ring-command"
+    :visible="showCommand"
+    :no-transition="showConfig"
+  />
   <Config
     class="config"
     v-if="showConfig"
