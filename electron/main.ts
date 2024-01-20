@@ -122,7 +122,7 @@ function createWindow() {
     transparent: true,
     resizable: false,
     movable: false,
-    show: true,
+    show: false,
     roundedCorners: false
   });
 
