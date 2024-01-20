@@ -6,4 +6,4 @@ https://github.com/nekobato/CommandCircle/assets/861170/ffbb7e8b-83c3-4fb2-9f37-
 
 ## Download
 
-TBD
+https://github.com/nekobato/CommandCircle/releases/latest
