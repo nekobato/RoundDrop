@@ -113,7 +113,7 @@ function setMenu() {
 
 function createWindow() {
   win = new BrowserWindow({
-    icon: path.join(statics.publicRoot, "vite.svg"),
+    icon: path.join(statics.publicRoot, "icon.png"),
     webPreferences: {
       preload: statics.preload
     },
@@ -189,8 +189,8 @@ app
     ipcMain.on("ring:closed", () => {
       console.log("ring:closed");
       win?.setIgnoreMouseEvents(true);
-      win?.hide();
       win?.blur();
+      win?.hide();
       isAnimation = false;
     });
 
