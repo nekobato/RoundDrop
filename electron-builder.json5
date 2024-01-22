@@ -9,7 +9,14 @@
   directories: {
     output: "release/${version}"
   },
-  files: ["dist", "dist-electron"],
+  files: [
+    "dist",
+    "dist-electron",
+    {
+      from: "node_modules/file-icon/file-icon",
+      to: "dist-electron/file-icon"
+    }
+  ],
   mac: {
     target: ["dmg"],
     icon: "dist/icons/mac/icon.icns",

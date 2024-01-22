@@ -39,6 +39,11 @@ ul.command-list {
   flex-direction: column;
   gap: 8px;
   overflow-y: scroll;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
   li {
     display: flex;
     align-items: center;

@@ -8,15 +8,15 @@ export default defineConfig({
     vue(),
     electron({
       main: {
-        entry: "electron/main.ts",
+        entry: "electron/main.ts"
       },
       preload: {
-        input: path.join(__dirname, "electron/preload.ts"),
+        input: path.join(__dirname, "electron/preload.ts")
       },
-      renderer: {},
-    }),
+      renderer: {}
+    })
   ],
   resolve: {
-    alias: [{ find: "@/", replacement: `${__dirname}/src/` }],
-  },
+    alias: [{ find: "@/", replacement: `${__dirname}/src/` }]
+  }
 });

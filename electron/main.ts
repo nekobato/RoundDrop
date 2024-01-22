@@ -19,6 +19,7 @@ import {
   setCommands
 } from "./store";
 import { nanoid } from "nanoid/non-secure";
+import { fileIconToBuffer } from "file-icon";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -226,51 +227,19 @@ app
       return setCommands(payload);
     });
 
-    ipcMain.handle("add:appCommand", (_, { name, appPath }) => {
+    ipcMain.handle("add:appCommand", async (_, { name, appPath }) => {
       console.log(appPath, name);
-      let iconFileName: string | undefined = undefined;
-      try {
-        const xml = fs.readFileSync(
-          path.join(appPath, "Contents/Info.plist"),
-          "utf8"
-        );
-        iconFileName = plist.parse(xml)?.CFBundleIconFile;
-        if (!iconFileName?.endsWith(".icns")) {
-          iconFileName = iconFileName + ".icns";
-        }
-      } catch (e) {
-        console.log(e);
-      }
 
-      if (!iconFileName) {
-        const appDirFiles = fs.readdirSync(
-          path.join(appPath, "Contents/Resources")
-        );
-        iconFileName = appDirFiles.find((file) => file.endsWith(".icns"));
-      }
-
-      if (!iconFileName) {
-        return {
-          error: "Icon not found."
-        };
-      }
-
-      const icons = Icns.from(
-        fs.readFileSync(path.join(appPath, "Contents/Resources", iconFileName))
-      ).images;
-      const base64Data = Buffer.from(
-        // biggest icon
-        icons.reduce((a, b) => {
-          return a.bytes > b.bytes ? a : b;
-        }).image
-      ).toString("base64");
+      const appIconBuffer: Buffer = await fileIconToBuffer(appPath, {
+        size: 128
+      });
       setCommands([
         ...getCommands(),
         {
           id: nanoid(),
           name: name.replace(".app", ""),
           command: appPath,
-          icon: base64Data
+          icon: appIconBuffer.toString("base64")
         }
       ]);
       return;

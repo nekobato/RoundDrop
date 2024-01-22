@@ -302,6 +302,12 @@ $animation-duration: 0.3s;
     opacity: 0.5;
   }
 }
+.ring-enter-from {
+  transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+.ring-leave-to {
+  transition-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+}
 .ring-enter-active,
 .ring-leave-active {
 }
