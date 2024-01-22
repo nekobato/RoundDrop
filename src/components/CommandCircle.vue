@@ -167,10 +167,13 @@ onMounted(() => {
 
 <style scoped lang="scss">
 $animation-duration: 0.3s;
+$animation-function-enter: cubic-bezier(0.215, 0.61, 0.355, 1);
+$animation-function-leave: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+
 .ring-command-container {
   width: 320px;
   height: 320px;
-  transition: transform $animation-duration cubic-bezier(0.215, 0.61, 0.355, 1);
+  transition: transform $animation-duration $animation-function-enter;
   will-change: transform;
 }
 .ring-command-list {
@@ -182,7 +185,7 @@ $animation-duration: 0.3s;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  transition: transform $animation-duration cubic-bezier(0.215, 0.61, 0.355, 1);
+  transition: transform $animation-duration $animation-function-enter;
   transform-origin: 50% 50%;
   will-change: transform;
   outline: none;
@@ -208,8 +211,7 @@ $animation-duration: 0.3s;
     position: absolute;
     top: 0;
     transform-origin: 0 50%;
-    transition: transform $animation-duration
-      cubic-bezier(0.215, 0.61, 0.355, 1);
+    transition: transform $animation-duration $animation-function-enter;
     transform-origin: 50% 50%;
     will-change: transform;
 
@@ -263,7 +265,7 @@ $animation-duration: 0.3s;
   position: absolute;
   top: 0;
   left: 0;
-  transition: transform $animation-duration cubic-bezier(0.215, 0.61, 0.355, 1);
+  transition: transform $animation-duration $animation-function-enter;
   transform-origin: 50% 50%;
   will-change: transform;
 }
@@ -303,12 +305,15 @@ $animation-duration: 0.3s;
   }
 }
 .ring-enter-from {
-  transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  .ring-command-list.outer,
+  .ring-command-item {
+    transition-timing-function: $animation-function-enter;
+  }
 }
 .ring-leave-to {
-  transition-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
-}
-.ring-enter-active,
-.ring-leave-active {
+  .ring-command-list.outer,
+  .ring-command-item {
+    transition-timing-function: $animation-function-leave;
+  }
 }
 </style>
