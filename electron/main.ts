@@ -5,7 +5,8 @@ import {
   ipcMain,
   type MenuItemConstructorOptions,
   shell,
-  type MenuItem
+  type MenuItem,
+  dialog
 } from "electron";
 import { Icns } from "@fiahfy/icns";
 import plist from "plist";
@@ -82,8 +83,20 @@ function setGlobalShortcut() {
 function setMenu() {
   const template: (MenuItemConstructorOptions | MenuItem)[] = [
     {
-      label: "CommandCircle",
+      label: "CircleCommand",
       submenu: [
+        {
+          label: "About CircleCommand",
+          click: () => {
+            dialog.showMessageBox({
+              type: "info",
+              icon: `${__dirname}/../public/icons/png/128x128.png`,
+              title: "CircleCommand",
+              message: `CircleCommand`,
+              detail: `Version: ${app.getVersion()}\n\nhttps://github.com/nekobato/CircleCommand/`
+            });
+          }
+        },
         {
           label: "Config",
           click: () => {
