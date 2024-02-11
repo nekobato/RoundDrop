@@ -24,7 +24,7 @@ const deleteCommand = async (command: AppCommand) => {
       />
       <span class="name">{{ command.name }}</span>
       <button class="delete-button" @click="deleteCommand(command)">
-        <Icon class="icon" icon="mingcute:delete-2-line" color="#000000" />
+        <Icon class="icon" icon="mingcute:delete-2-line" />
       </button>
     </li>
   </ul>
@@ -33,7 +33,7 @@ const deleteCommand = async (command: AppCommand) => {
 <style scoped lang="scss">
 ul.command-list {
   list-style: none;
-  padding: 8px;
+  padding: 8px 0;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -67,22 +67,24 @@ ul.command-list {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  top: -8px;
-  right: -8px;
+  right: 8px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.5);
-  color: rgba(0, 0, 0, 1);
+  background-color: transparent;
   border: none;
   cursor: pointer;
+
   &:hover {
-    background-color: rgba(255, 160, 160, 0.8);
+    .icon {
+      color: rgba(255, 166, 166, 0.8);
+    }
   }
   .icon {
     flex-shrink: 0;
     width: 16px;
     height: 16px;
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 </style>

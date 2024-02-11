@@ -4,6 +4,7 @@ import { Icon } from "@iconify/vue";
 import ConfigCommandList from "./ConfigCommandList.vue";
 import { Config } from "@/types/app";
 import { keyboardEventToElectronAccelerator } from "@/utils";
+import WindowHeader from "./WindowHeader.vue";
 
 // buffer to base64 on browser
 const config = inject<Ref<Config>>("config");
@@ -49,7 +50,7 @@ const emitChange = () => {
   emit("change");
 };
 
-const closeConfig = () => {
+const onExit = () => {
   emit("close");
 };
 
@@ -87,11 +88,7 @@ watch(
 
 <template>
   <div class="config">
-    <div class="header">
-      <button class="close-button" @click="closeConfig">
-        <Icon icon="mingcute:close-fill" color="#ffffff" />
-      </button>
-    </div>
+    <WindowHeader @exit="onExit" />
     <div class="config-contents">
       <div class="options">
         <div class="input-field">
@@ -117,8 +114,6 @@ watch(
             @change="onChangeIconSize"
           />
         </div>
-      </div>
-      <div class="command-list-container">
         <div
           class="drop-area"
           :class="{ drag }"
@@ -129,6 +124,8 @@ watch(
           <p v-if="dropAreaErrorMessage">{{ dropAreaErrorMessage }}</p>
           <p v-else>Drop your app here</p>
         </div>
+      </div>
+      <div class="command-list-container">
         <ConfigCommandList @change="emitChange" />
       </div>
     </div>
@@ -145,24 +142,18 @@ watch(
   border-radius: 8px;
   background-color: rgba(0, 0, 0, 0.5);
 }
-.close-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 24px;
-  background-color: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 16px;
 }
 .config-contents {
   display: grid;
   grid-template-columns: 50% 50%;
   overflow-y: auto;
+  width: 100%;
+  padding: 16px;
 }
 .command-list-container {
   display: flex;
@@ -172,8 +163,9 @@ watch(
   flex-shrink: 0;
 }
 .drop-area {
+  margin: auto 0 0 0;
   width: 100%;
-  height: 80px;
+  height: 160px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -190,7 +182,6 @@ watch(
   }
 }
 .input-field {
-  padding: 8px;
   label {
     color: rgba(255, 255, 255, 0.8);
     font-size: 12px;

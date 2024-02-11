@@ -34,6 +34,7 @@ let isAnimation = false;
 function openConfig() {
   win?.setIgnoreMouseEvents(false);
   win?.setVisibleOnAllWorkspaces(false);
+  win?.setAlwaysOnTop(false);
   win?.webContents.send("ring:config");
   isVisible = true;
   win?.setSize(640, 480);
@@ -55,6 +56,7 @@ function closeConfig() {
   });
   win?.setIgnoreMouseEvents(true);
   win?.setVisibleOnAllWorkspaces(true);
+  win?.setAlwaysOnTop(true);
   win?.blur();
   setGlobalShortcut();
 }
