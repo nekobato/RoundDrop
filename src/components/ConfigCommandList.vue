@@ -12,13 +12,31 @@ const deleteCommand = async (command: AppCommand) => {
     emit("change");
   }
 };
+
+const onClickUp = async (index: number) => {
+  const commands = config?.value.commands;
+  if (commands && index > 0) {
+    commands.splice(index - 1, 0, commands.splice(index, 1)[0]);
+    await window.ipc.invoke("set:commands", commands);
+    emit("change");
+  }
+};
+
+const onClickDown = async (index: number) => {
+  const commands = config?.value.commands;
+  if (commands && index < commands.length - 1) {
+    commands.splice(index, 2, commands[index + 1], commands[index]);
+    await window.ipc.invoke("set:commands", commands);
+    emit("change");
+  }
+};
 </script>
 
 <template>
   <ul class="command-list" v-if="config">
-    <li v-for="command in config.commands" :key="command.command">
+    <li v-for="(command, index) in config.commands" :key="command.command">
       <AppIcon
-        class="icon"
+        class="app-icon"
         :image="command.icon"
         :icon-size="config.iconSize"
       />
@@ -26,6 +44,20 @@ const deleteCommand = async (command: AppCommand) => {
       <button class="delete-button" @click="deleteCommand(command)">
         <Icon class="icon" icon="mingcute:delete-2-line" />
       </button>
+      <div class="sort-button-group">
+        <Icon
+          class="icon"
+          icon="mingcute:up-line"
+          @click="onClickUp(index)"
+          v-if="index > 0"
+        />
+        <Icon
+          class="icon"
+          icon="mingcute:down-line"
+          @click="onClickDown(index)"
+          v-if="index < config.commands.length - 1"
+        />
+      </div>
     </li>
   </ul>
 </template>
@@ -55,6 +87,28 @@ ul.command-list {
       .delete-button {
         visibility: visible;
       }
+      .sort-button-group {
+        visibility: visible;
+      }
+    }
+  }
+}
+.sort-button-group {
+  margin: 0 0 0 auto;
+  width: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  visibility: hidden;
+
+  > .icon {
+    width: 16px;
+    height: 16px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    &:hover {
+      color: rgba(255, 255, 255, 0.8);
     }
   }
 }
@@ -67,7 +121,7 @@ ul.command-list {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  right: 8px;
+  right: 40px;
   width: 20px;
   height: 20px;
   border-radius: 50%;

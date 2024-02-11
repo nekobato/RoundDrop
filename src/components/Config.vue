@@ -72,7 +72,7 @@ const onDrop = async (e: DragEvent | Event) => {
     drag.value = false;
     emit("change");
   } else {
-    dropAreaErrorMessage.value = "Only .app file is allowed.";
+    dropAreaErrorMessage.value = "Only *.app file is allowed.";
   }
 };
 
@@ -121,8 +121,14 @@ watch(
           @dragleave.prevent="drag = false"
           @drop.prevent="onDrop"
         >
+          <Icon
+            class="icon"
+            icon="mingcute:apple-line"
+            :width="24"
+            :height="24"
+          />
           <p v-if="dropAreaErrorMessage">{{ dropAreaErrorMessage }}</p>
-          <p v-else>Drop your app here</p>
+          <p v-else>Drop *.app here</p>
         </div>
       </div>
       <div class="command-list-container">
@@ -168,6 +174,8 @@ watch(
   height: 160px;
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.2);
@@ -179,6 +187,9 @@ watch(
   }
   .input {
     display: none;
+  }
+  .icon {
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 .input-field {

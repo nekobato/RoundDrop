@@ -38,8 +38,8 @@ function openConfig() {
   win?.webContents.send("ring:config");
   isVisible = true;
   win?.setSize(640, 480);
-  win?.show();
   win?.center();
+  win?.show();
   win?.focus();
   globalShortcut.unregisterAll();
 }
