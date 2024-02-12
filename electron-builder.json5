@@ -18,7 +18,7 @@
     }
   ],
   mac: {
-    target: ["dmg"],
+    target: ["default"],
     icon: "dist/icons/mac/icon.icns",
     artifactName: "${productName}-Mac-${version}-Installer.${ext}"
   },
