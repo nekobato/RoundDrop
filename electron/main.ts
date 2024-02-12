@@ -1,29 +1,26 @@
 import {
-  app,
   BrowserWindow,
+  app,
+  dialog,
   globalShortcut,
   ipcMain,
-  type MenuItemConstructorOptions,
   shell,
   type MenuItem,
-  dialog
+  type MenuItemConstructorOptions
 } from "electron";
-import { Icns } from "@fiahfy/icns";
-import plist from "plist";
+import { fileIconToBuffer } from "file-icon";
+import { nanoid } from "nanoid/non-secure";
+import path from "node:path";
+import { checkUpdate } from "./autoupdate";
 import * as statics from "./static";
 import {
+  getCommands,
   getConfig,
   getShortcuts,
-  setShortcut,
+  setCommands,
   setIconSize,
-  getCommands,
-  setCommands
+  setShortcut
 } from "./store";
-import { nanoid } from "nanoid/non-secure";
-import { fileIconToBuffer } from "file-icon";
-import path from "node:path";
-import fs from "node:fs";
-import { checkUpdate } from "./autoupdate";
 
 // 残像防止
 app.disableHardwareAcceleration();
