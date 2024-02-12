@@ -23,6 +23,7 @@ import { nanoid } from "nanoid/non-secure";
 import { fileIconToBuffer } from "file-icon";
 import path from "node:path";
 import fs from "node:fs";
+import { checkUpdate } from "./autoupdate";
 
 // 残像防止
 app.disableHardwareAcceleration();
@@ -182,6 +183,8 @@ app.on("activate", () => {
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
 });
+
+checkUpdate();
 
 app
   .whenReady()
