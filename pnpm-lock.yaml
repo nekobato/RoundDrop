@@ -13,6 +13,9 @@ dependencies:
     version: 5.1.1
 
 devDependencies:
+  '@electron/notarize':
+    specifier: ^2.2.1
+    version: 2.2.1
   '@iconify/vue':
     specifier: ^4.1.1
     version: 4.1.1(vue@3.4.6)
@@ -22,6 +25,9 @@ devDependencies:
   '@vitejs/plugin-vue':
     specifier: ^4.5.2
     version: 4.6.2(vite@5.0.11)(vue@3.4.6)
+  dotenv:
+    specifier: ^16.4.2
+    version: 16.4.2
   electron:
     specifier: ^28.1.4
     version: 28.1.4
@@ -142,6 +148,17 @@ packages:
 
   /@electron/notarize@2.1.0:
     resolution: {integrity: sha512-Q02xem1D0sg4v437xHgmBLxI2iz/fc0D4K7fiVWHa/AnW8o7D751xyKNXgziA6HrTOme9ul1JfWN5ark8WH1xA==}
+    engines: {node: '>= 10.0.0'}
+    dependencies:
+      debug: 4.3.4
+      fs-extra: 9.1.0
+      promise-retry: 2.0.1
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  /@electron/notarize@2.2.1:
+    resolution: {integrity: sha512-aL+bFMIkpR0cmmj5Zgy0LMKEpgy43/hw5zadEArgmAMWWlKc5buwFvFT9G/o/YJkvXAJm5q3iuTuLaiaXW39sg==}
     engines: {node: '>= 10.0.0'}
     dependencies:
       debug: 4.3.4
@@ -1914,6 +1931,11 @@ packages:
 
   /dotenv-expand@5.1.0:
     resolution: {integrity: sha512-YXQl1DSa4/PQyRfgrv6aoNjhasp/p4qs9FjJ4q4cQk+8m4r6k4ZSiEyytKG8f8W9gi8WsQtIObNmKd+tMzNTmA==}
+    dev: true
+
+  /dotenv@16.4.2:
+    resolution: {integrity: sha512-rZSSFxke7d9nYQ5NeMIwp5PP+f8wXgKNljpOb7KtH6SKW1cEqcXAz9VSJYVLKe7Jhup/gUYOkaeSVyK8GJ+nBg==}
+    engines: {node: '>=12'}
     dev: true
 
   /dotenv@9.0.2:

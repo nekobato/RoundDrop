@@ -15,12 +15,19 @@ export const checkUpdate = () => {
 
   autoUpdater.on("update-downloaded", (info) => {
     log.debug("autoUpdater: update-downloaded", info);
-    dialog.showMessageBox({
-      type: "info",
-      buttons: ["いいよ", "ダメ"],
-      title: "アップデートがあります",
-      message: "再起動してね"
-    });
+    dialog
+      .showMessageBox({
+        type: "info",
+        buttons: ["いいよ", "ダメ"],
+        title: "アップデートがあります",
+        message: "アップデートがあります",
+        detail: "アプリケーションを再起動して\nアップデートしてね"
+      })
+      .then((result) => {
+        if (result.response === 0) {
+          autoUpdater.quitAndInstall();
+        }
+      });
   });
 
   return autoUpdater;
