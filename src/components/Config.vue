@@ -133,6 +133,9 @@ watch(
       </div>
       <div class="command-list-container">
         <ConfigCommandList @change="emitChange" />
+        <div class="empty-state" v-if="config?.commands.length === 0">
+          <p>まだアプリケーションは<br />登録されてないよ</p>
+        </div>
       </div>
     </div>
   </div>
@@ -211,5 +214,14 @@ watch(
       border-color: rgba(255, 255, 255, 0.8);
     }
   }
+}
+.empty-state {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  height: 100%;
 }
 </style>
