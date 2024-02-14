@@ -6,7 +6,7 @@ https://github.com/nekobato/CommandCircle/assets/861170/ffbb7e8b-83c3-4fb2-9f37-
 
 ## Usage
 
-By default, "Control+Option+Z" displays the launcher.
+By default, `Control+Option+Z` displays the launcher.
 
 ## Supported OS
 
