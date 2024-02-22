@@ -27,3 +27,4 @@ release
 
 .env
 electron-builder.env
+.sentryclirc

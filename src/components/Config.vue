@@ -149,7 +149,7 @@ watch(
   display: grid;
   grid-template-rows: 24px 1fr;
   border-radius: 8px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.8);
 }
 .options {
   display: flex;

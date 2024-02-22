@@ -11,7 +11,6 @@ import {
 import { fileIconToBuffer } from "file-icon";
 import { nanoid } from "nanoid/non-secure";
 import path from "node:path";
-import { checkUpdate } from "./autoupdate";
 import * as statics from "./static";
 import {
   getCommands,
@@ -21,6 +20,10 @@ import {
   setIconSize,
   setShortcut
 } from "./store";
+import { checkUpdate } from "./utils/autoupdate";
+import { initSentry, reportError } from "./utils/sentry";
+
+initSentry();
 
 // 残像防止
 app.disableHardwareAcceleration();

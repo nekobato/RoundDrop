@@ -11,6 +11,7 @@
   },
   files: [
     "dist",
+    "!dist/assets/*.map",
     "dist-electron",
     {
       from: "node_modules/file-icon/file-icon",
