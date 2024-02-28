@@ -3,9 +3,9 @@
  */
 {
   $schema: "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  appId: "net.nekobato.CommandCircle",
+  appId: "net.nekobato.RoundDrop",
   asar: true,
-  productName: "CommandCircle",
+  productName: "RoundDrop",
   directories: {
     output: "release/${version}"
   },

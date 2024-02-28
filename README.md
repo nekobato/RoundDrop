@@ -1,8 +1,8 @@
-# CommandCircle
+# RoundDrop
 
 Desktop Application Launcher for macOS inspired by Command Menu from 聖剣伝説 2 (Seiken Densetsu 2).
 
-https://github.com/nekobato/CommandCircle/assets/861170/ffbb7e8b-83c3-4fb2-9f37-8b94d3e558fd
+https://github.com/nekobato/RoundDrop/assets/861170/ffbb7e8b-83c3-4fb2-9f37-8b94d3e558fd
 
 ## Usage
 
@@ -18,4 +18,4 @@ Yes, that's right.
 
 ## Download
 
-[Latest Release](https://github.com/nekobato/CommandCircle/releases/latest)
+[Latest Release](https://github.com/nekobato/RoundDrop/releases/latest)

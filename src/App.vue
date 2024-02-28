@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, provide } from "vue";
-import CommandCircle from "@/components/CommandCircle.vue";
+import RoundDrop from "@/components/Ring.vue";
 import Config from "./components/Config.vue";
 import { defaultConfig } from "./utils";
 
@@ -47,7 +47,7 @@ onMounted(async () => {
 
 <template>
   <div class="scrim" v-if="showCommand" />
-  <CommandCircle
+  <RoundDrop
     class="ring-command"
     :visible="showCommand"
     :no-transition="showConfig"
