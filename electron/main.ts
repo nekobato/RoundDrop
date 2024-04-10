@@ -5,6 +5,7 @@ import {
   globalShortcut,
   ipcMain,
   shell,
+  screen,
   type MenuItem,
   type MenuItemConstructorOptions
 } from "electron";
@@ -21,7 +22,7 @@ import {
   setShortcut
 } from "./store";
 import { checkUpdate } from "./utils/autoupdate";
-import { initSentry, reportError } from "./utils/sentry";
+import { initSentry } from "./utils/sentry";
 
 initSentry();
 
@@ -48,18 +49,25 @@ function openConfig() {
 function closeConfig() {
   isVisible = false;
   win?.hide();
-  const { workArea } = require("electron").screen.getPrimaryDisplay();
+  setLauncherWindowPosition();
+  win?.setIgnoreMouseEvents(true);
+  win?.setVisibleOnAllWorkspaces(true);
+  win?.setAlwaysOnTop(true);
+  win?.blur();
+  setGlobalShortcut();
+}
+
+function setLauncherWindowPosition() {
+  const { x, y } = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint({ x, y });
+  const { workArea } = display;
+
   win?.setBounds({
     x: workArea.x,
     y: workArea.y,
     width: workArea.width,
     height: workArea.height
   });
-  win?.setIgnoreMouseEvents(true);
-  win?.setVisibleOnAllWorkspaces(true);
-  win?.setAlwaysOnTop(true);
-  win?.blur();
-  setGlobalShortcut();
 }
 
 function toggleRing() {
@@ -69,6 +77,7 @@ function toggleRing() {
     win?.webContents.send("ring:close");
     isVisible = false;
   } else {
+    setLauncherWindowPosition();
     win?.webContents.send("ring:open");
     isVisible = true;
     win?.show();
@@ -143,13 +152,7 @@ function createWindow() {
     roundedCorners: false
   });
 
-  const { workArea } = require("electron").screen.getPrimaryDisplay();
-  win.setBounds({
-    x: workArea.x,
-    y: workArea.y,
-    width: workArea.width,
-    height: workArea.height
-  });
+  setLauncherWindowPosition();
   win.setVisibleOnAllWorkspaces(true);
 
   win.webContents.on("did-finish-load", () => {
