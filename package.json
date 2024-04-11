@@ -11,9 +11,8 @@
   "description": "Ring UI Application Launcher for macOS",
   "scripts": {
     "dev": "vite",
-    "build": "node script/copyBinary && vue-tsc && vite build && electron-builder",
-    "release": "node script/copyBinary && vite build && electron-builder --publish always",
-    "preview": "vite preview",
+    "build": "node script/copyBinary && vue-tsc && vite build && electron-builder --config electron-builder.config.cjs",
+    "release": "node script/copyBinary && vite build && electron-builder --publish always --config electron-builder.config.cjs",
     "build:icon": "electron-icon-builder --input=./public/icon.png --output=./public"
   },
   "engines": {
