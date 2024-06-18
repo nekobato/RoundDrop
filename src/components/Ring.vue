@@ -78,7 +78,10 @@ const onKeyDownEnter = () => {
 // 大きすぎる値にならないように止まった時点でリセットする
 const onListTransitionEnd = () => {
   if (Math.abs(focusIndex.value) >= itemLength.value) {
-    focusIndex.value = Math.abs(focusIndex.value) % itemLength.value;
+    focusIndex.value =
+      focusIndex.value >= 0
+        ? Math.abs(focusIndex.value) % itemLength.value
+        : -Math.abs(focusIndex.value) % itemLength.value;
     pauseTransition.value = true;
     setTimeout(() => {
       pauseTransition.value = false;
