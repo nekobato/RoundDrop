@@ -26,8 +26,10 @@ import { initSentry } from "./utils/sentry";
 
 initSentry();
 
-// 残像防止
-app.disableHardwareAcceleration();
+// Prevent multiple instances
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+}
 
 let win: BrowserWindow | null;
 let isVisible = false;
@@ -95,17 +97,17 @@ function setGlobalShortcut() {
 function setMenu() {
   const template: (MenuItemConstructorOptions | MenuItem)[] = [
     {
-      label: "CircleCommand",
+      label: "RoundDrop",
       submenu: [
         {
-          label: "About CircleCommand",
+          label: "About RoundDrop",
           click: () => {
             dialog.showMessageBox({
               type: "info",
               icon: `${__dirname}/../public/icons/png/128x128.png`,
-              title: "CircleCommand",
-              message: `CircleCommand`,
-              detail: `Version: ${app.getVersion()}\n\nhttps://github.com/nekobato/CircleCommand/`
+              title: "RoundDrop",
+              message: `RoundDrop`,
+              detail: `Version: ${app.getVersion()}\n\nhttps://github.com/nekobato/RoundDrop/`
             });
           }
         },
@@ -149,7 +151,8 @@ function createWindow() {
     resizable: false,
     movable: false,
     show: false,
-    roundedCorners: false
+    roundedCorners: false,
+    hasShadow: false
   });
 
   setLauncherWindowPosition();
@@ -180,6 +183,8 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  } else {
+    toggleRing();
   }
 });
 

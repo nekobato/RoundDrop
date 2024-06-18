@@ -68,7 +68,7 @@ onMounted(async () => {
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease-in-out;
+  transition: background-color 0.3s ease-in-out;
 }
 .ring-command {
   position: absolute;
