@@ -1,40 +1,51 @@
 <script setup lang="ts">
-import { Ref, inject } from "vue";
+import { Ref, computed, inject, ref, watch, toRaw } from "vue";
 import { Icon } from "@iconify/vue";
 import AppIcon from "./AppIcon.vue";
 import { AppCommand, type Config } from "../types/app";
+import { useSortable } from "@vueuse/integrations/useSortable";
 
 const config = inject<Ref<Config>>("config");
 const emit = defineEmits(["change"]);
+
+const sortableElement = ref<HTMLElement | null>(null);
+const sortableCommandList = ref<AppCommand[]>(config?.value.commands || []);
+
+const commandList = computed(() => {
+  return config?.value.commands || [];
+});
+
+useSortable(sortableElement, sortableCommandList, {
+  animation: 150
+});
+
 const deleteCommand = async (command: AppCommand) => {
-  if (config) {
-    await window.ipc.invoke("delete:command", command.id);
-    emit("change");
-  }
+  await window.ipc.invoke("delete:command", command.id);
+  emit("change");
 };
 
-const onClickUp = async (index: number) => {
-  const commands = config?.value.commands;
-  if (commands && index > 0) {
-    commands.splice(index - 1, 0, commands.splice(index, 1)[0]);
-    await window.ipc.invoke("set:commands", commands);
+// sortableCommandList側の変更
+watch(sortableCommandList, async (newValue) => {
+  if (config?.value.commands && newValue !== config?.value.commands) {
+    await window.ipc.invoke(
+      "set:commands",
+      newValue.map((c) => toRaw(c))
+    );
     emit("change");
   }
-};
+});
 
-const onClickDown = async (index: number) => {
-  const commands = config?.value.commands;
-  if (commands && index < commands.length - 1) {
-    commands.splice(index, 2, commands[index + 1], commands[index]);
-    await window.ipc.invoke("set:commands", commands);
-    emit("change");
+// originalのcommandList側の変更
+watch(commandList, async () => {
+  if (config?.value.commands) {
+    sortableCommandList.value = config?.value.commands;
   }
-};
+});
 </script>
 
 <template>
-  <ul class="command-list" v-if="config">
-    <li v-for="(command, index) in config.commands" :key="command.command">
+  <ul class="command-list" v-if="config" ref="sortableElement">
+    <li v-for="command in config.commands" :key="command.id">
       <AppIcon
         class="app-icon"
         :image="command.icon"
@@ -44,20 +55,6 @@ const onClickDown = async (index: number) => {
       <button class="delete-button" @click="deleteCommand(command)">
         <Icon class="icon" icon="mingcute:delete-2-line" />
       </button>
-      <div class="sort-button-group">
-        <Icon
-          class="icon"
-          icon="mingcute:up-line"
-          @click="onClickUp(index)"
-          v-if="index > 0"
-        />
-        <Icon
-          class="icon"
-          icon="mingcute:down-line"
-          @click="onClickDown(index)"
-          v-if="index < config.commands.length - 1"
-        />
-      </div>
     </li>
   </ul>
 </template>
@@ -83,6 +80,10 @@ ul.command-list {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     position: relative;
+    cursor: grab;
+    &:active {
+      cursor: grabbing;
+    }
     &:hover {
       .delete-button {
         visibility: visible;
@@ -91,24 +92,8 @@ ul.command-list {
         visibility: visible;
       }
     }
-  }
-}
-.sort-button-group {
-  margin: 0 0 0 auto;
-  width: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  visibility: hidden;
-
-  > .icon {
-    width: 16px;
-    height: 16px;
-    color: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    &:hover {
-      color: rgba(255, 255, 255, 0.8);
+    &.sortable-chosen {
+      opacity: 0.4;
     }
   }
 }
@@ -121,7 +106,7 @@ ul.command-list {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  right: 40px;
+  right: 16px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
