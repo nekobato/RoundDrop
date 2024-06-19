@@ -4,8 +4,6 @@ const pkg = require("./package.json");
  * @see https://www.electron.build/configuration/configuration
  */
 const config = {
-  $schema:
-    "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   appId: "net.nekobato.RoundDrop",
   asar: true,
   productName: "RoundDrop",
