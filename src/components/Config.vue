@@ -92,7 +92,7 @@ watch(
     <div class="config-contents">
       <div class="options">
         <div class="input-field">
-          <label for="shortcut">リング呼び出し/戻しショートカット</label>
+          <label for="shortcut">リングメニュー開閉ショートカット</label>
           <input
             id="shortcut"
             type="text"
@@ -101,6 +101,7 @@ watch(
             readonly
             @click="focusShortcutInput"
             ref="shortcutInput"
+            placeholder="キーの組み合わせを入力してください"
           />
         </div>
         <div class="input-field">
