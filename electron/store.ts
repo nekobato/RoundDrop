@@ -6,7 +6,7 @@ export const store = new Store({
     shortcuts: {
       toggleCommand: "Control+Alt+Z"
     },
-    iconSize: 1,
+    iconSize: 2,
     commands: [] as {
       id: string;
       name: string;
