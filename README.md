@@ -19,3 +19,7 @@ Yes, that's right.
 ## Download
 
 [Latest Release](https://github.com/nekobato/RoundDrop/releases/latest)
+
+## License
+
+MIT License
