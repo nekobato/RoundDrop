@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from "vue";
 const props = defineProps({
   image: {
     type: String,
@@ -10,15 +9,10 @@ const props = defineProps({
     required: true
   }
 });
-
-const image = computed(() => {
-  // from base64
-  return `data:image/png;base64,${props.image}`;
-});
 </script>
 <template>
   <div class="image-container" :class="`size-${props.iconSize}`">
-    <img :src="image" />
+    <img :src="props.image" />
   </div>
 </template>
 <style scoped lang="scss">

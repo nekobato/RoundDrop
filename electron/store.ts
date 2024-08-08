@@ -1,19 +1,42 @@
 import Store from "electron-store";
+import { Config } from "../src/types/app";
 
-export const store = new Store({
+export const store = new Store<Config>({
   name: "config",
-  defaults: {
+  schema: {
     shortcuts: {
-      toggleCommand: "Control+Alt+Z"
+      type: "object",
+      properties: {
+        toggleCommand: {
+          type: "string",
+          default: "Control+Alt+Z"
+        }
+      }
     },
-    iconSize: 2,
-    commands: [] as {
-      id: string;
-      name: string;
-      command: string;
-      icon: string;
-    }[]
-  }
+    iconSize: {
+      type: "number",
+      default: 3
+    },
+    commands: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string"
+          },
+          name: {
+            type: "string"
+          },
+          command: {
+            type: "string"
+          }
+        }
+      },
+      default: []
+    }
+  },
+  clearInvalidConfig: true
 });
 
 export const getConfig = () => {

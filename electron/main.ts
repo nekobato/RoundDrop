@@ -7,9 +7,10 @@ import {
   shell,
   screen,
   type MenuItem,
-  type MenuItemConstructorOptions
+  type MenuItemConstructorOptions,
+  protocol,
+  net
 } from "electron";
-import { fileIconToBuffer } from "file-icon";
 import { nanoid } from "nanoid/non-secure";
 import path from "node:path";
 import * as statics from "./static";
@@ -23,6 +24,12 @@ import {
 } from "./store";
 import { checkUpdate } from "./utils/autoupdate";
 import { initSentry } from "./utils/sentry";
+import {
+  deleteImage,
+  getImagePath,
+  imageDirPath,
+  saveIconImage
+} from "./utils/image";
 
 initSentry();
 
@@ -106,7 +113,7 @@ function setMenu() {
               type: "info",
               icon: `${__dirname}/../public/icons/png/128x128.png`,
               title: "RoundDrop",
-              message: `RoundDrop`,
+              message: "RoundDrop",
               detail: `Version: ${app.getVersion()}\n\nhttps://github.com/nekobato/RoundDrop/`
             });
           }
@@ -143,7 +150,8 @@ function createWindow() {
   win = new BrowserWindow({
     icon: path.join(statics.publicRoot, "icon.png"),
     webPreferences: {
-      preload: statics.preload
+      preload: statics.preload,
+      devTools: statics.VITE_DEV_SERVER_URL ? true : false
     },
     alwaysOnTop: true,
     frame: false,
@@ -193,6 +201,17 @@ app.on("will-quit", () => {
 });
 
 checkUpdate();
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "image",
+    privileges: {
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true
+    }
+  }
+]);
 
 app
   .whenReady()
@@ -256,16 +275,15 @@ app
     ipcMain.handle("add:appCommand", async (_, { name, appPath }) => {
       console.log(appPath, name);
 
-      const appIconBuffer: Buffer = await fileIconToBuffer(appPath, {
-        size: 128
-      });
+      const id = nanoid();
+      await saveIconImage(id, appPath);
+
       setCommands([
         ...getCommands(),
         {
-          id: nanoid(),
+          id,
           name: name.replace(".app", ""),
-          command: appPath,
-          icon: appIconBuffer.toString("base64")
+          command: appPath
         }
       ]);
       return;
@@ -273,10 +291,17 @@ app
 
     ipcMain.handle("delete:command", (_, id) => {
       const commands = getCommands();
-      const newCommands = commands.filter((command) => {
-        return command.id !== id;
+      const deleteCommand = commands.find((command) => {
+        return command.id === id;
       });
-      setCommands(newCommands);
+      if (deleteCommand) {
+        deleteImage(deleteCommand.id);
+      }
+      setCommands(
+        commands.filter((command) => {
+          return command.id !== id;
+        })
+      );
     });
 
     ipcMain.on("open-path", (_, path) => {
@@ -285,5 +310,25 @@ app
         isVisible = false;
         shell.openPath(path);
       }
+    });
+
+    protocol.handle("image", (req) => {
+      const imageName = new URL(req.url).pathname;
+
+      // 400 if path is not safe
+      const imagePath = getImagePath(imageName);
+      const relativePath = path.relative(imageDirPath, imagePath);
+      const isSafe =
+        relativePath &&
+        !relativePath.startsWith("..") &&
+        !path.isAbsolute(relativePath);
+      if (!isSafe) {
+        return new Response("bad", {
+          status: 400,
+          headers: { "content-type": "text/html" }
+        });
+      }
+
+      return net.fetch(`file://${imagePath}`);
     });
   });

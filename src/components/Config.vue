@@ -135,7 +135,7 @@ watch(
       <div class="command-list-container">
         <ConfigCommandList @change="emitChange" />
         <div class="empty-state" v-if="config?.commands.length === 0">
-          <p>まだアプリケーションは<br />登録されてないよ</p>
+          <p>アプリケーションは<br />登録されてないよ</p>
         </div>
       </div>
     </div>

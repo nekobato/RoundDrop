@@ -48,7 +48,7 @@ watch(commandList, async () => {
     <li v-for="command in config.commands" :key="command.id">
       <AppIcon
         class="app-icon"
-        :image="command.icon"
+        :image="'image://image/' + command.id + '.png'"
         :icon-size="config.iconSize"
       />
       <span class="name">{{ command.name }}</span>

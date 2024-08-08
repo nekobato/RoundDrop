@@ -152,7 +152,7 @@ onMounted(() => {
             <div class="ring-command-item inner" @transitionend.stop>
               <AppIcon
                 class="icon"
-                :image="item.icon"
+                :image="'image://image/' + item.id + '.png'"
                 :iconSize="config.iconSize"
                 :style="commandItemIconStyle(index)"
               />
@@ -172,6 +172,11 @@ onMounted(() => {
 $animation-duration: 0.3s;
 $animation-function-enter: cubic-bezier(0.215, 0.61, 0.355, 1);
 $animation-function-leave: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+
+$icon-size-0: 24px;
+$icon-size-1: 32px;
+$icon-size-2: 48px;
+$icon-size-3: 64px;
 
 .ring-command-container {
   width: 320px;
@@ -222,20 +227,20 @@ $animation-function-leave: cubic-bezier(0.55, 0.055, 0.675, 0.19);
       visibility: visible;
     }
     &.size-0 {
-      width: 24px;
-      left: calc(50% - 12px);
+      width: $icon-size-0;
+      left: calc(50% - $icon-size-0 / 2);
     }
     &.size-1 {
-      width: 32px;
-      left: calc(50% - 16px);
+      width: $icon-size-1;
+      left: calc(50% - $icon-size-1 / 2);
     }
     &.size-2 {
-      width: 48px;
-      left: calc(50% - 24px);
+      width: $icon-size-2;
+      left: calc(50% - $icon-size-2 / 2);
     }
     &.size-3 {
-      width: 64px;
-      left: calc(50% - 32px);
+      width: $icon-size-3;
+      left: calc(50% - $icon-size-3 / 2);
     }
   }
 }
@@ -243,24 +248,24 @@ $animation-function-leave: cubic-bezier(0.55, 0.055, 0.675, 0.19);
   position: absolute;
   top: -4px;
   &.size-0 {
-    width: 32px;
-    height: 32px;
-    left: calc(50% - 16px);
+    width: $icon-size-0 + 8px;
+    height: $icon-size-0 + 8px;
+    left: calc(50% - $icon-size-0 / 2 - 4px);
   }
   &.size-1 {
-    width: 40px;
-    height: 40px;
-    left: calc(50% - 20px);
+    width: $icon-size-1 + 8px;
+    height: $icon-size-1 + 8px;
+    left: calc(50% - $icon-size-1 / 2 - 4px);
   }
   &.size-2 {
-    width: 56px;
-    height: 56px;
-    left: calc(50% - 28px);
+    width: $icon-size-2 + 8px;
+    height: $icon-size-2 + 8px;
+    left: calc(50% - $icon-size-2 / 2 - 4px);
   }
   &.size-3 {
-    width: 72px;
-    height: 72px;
-    left: calc(50% - 36px);
+    width: $icon-size-3 + 8px;
+    height: $icon-size-3 + 8px;
+    left: calc(50% - $icon-size-3 / 2 - 4px);
   }
 }
 
