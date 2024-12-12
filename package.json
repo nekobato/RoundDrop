@@ -19,34 +19,34 @@
   },
   "engines": {
     "node": ">=20",
-    "pnpm": ">=8"
+    "pnpm": ">=9"
   },
   "dependencies": {
     "electron-store": "^10.0.0",
     "file-icon": "^5.1.1"
   },
   "devDependencies": {
-    "@electron/notarize": "^2.4.0",
-    "@iconify/vue": "^4.1.2",
-    "@sentry/electron": "^5.3.0",
-    "@types/node": "^22.4.1",
-    "@vitejs/plugin-vue": "^5.1.2",
-    "@vueuse/integrations": "^11.0.1",
-    "electron": "^32.0.0",
-    "electron-builder": "^24.13.3",
+    "@electron/notarize": "^2.5.0",
+    "@iconify/vue": "^4.2.0",
+    "@sentry/electron": "^5.7.0",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vueuse/integrations": "^12.0.0",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "electron-icon-builder": "^2.0.1",
-    "electron-log": "^5.1.7",
-    "electron-updater": "^6.2.1",
+    "electron-log": "^5.2.4",
+    "electron-updater": "^6.3.9",
     "fs-extra": "^11.2.0",
-    "nanoid": "^5.0.7",
-    "sass": "^1.77.8",
-    "sortablejs": "^1.15.2",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.1",
-    "vite-plugin-electron": "^0.28.7",
-    "vite-plugin-electron-renderer": "^0.14.5",
-    "vue": "^3.4.38",
-    "vue-tsc": "^2.0.29"
+    "nanoid": "^5.0.9",
+    "sass": "^1.82.0",
+    "sortablejs": "^1.15.6",
+    "typescript": "5.6.3",
+    "vite": "^6.0.3",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vue": "^3.5.13",
+    "vue-tsc": "^2.1.10"
   },
   "main": "dist-electron/main.js"
 }

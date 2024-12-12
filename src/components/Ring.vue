@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ref, Transition, computed, inject, onMounted, ref } from "vue";
+import { Ref, computed, inject, onMounted, ref } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
 import { Config } from "../types/app";
