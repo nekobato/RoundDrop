@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Ref, computed, inject, ref, watch } from "vue";
-import { Icon } from "@iconify/vue";
-import ConfigCommandList from "./ConfigCommandList.vue";
 import { Config } from "@/types/app";
 import { keyboardEventToElectronAccelerator } from "@/utils";
 import WindowHeader from "./WindowHeader.vue";
+import CommandTree from "./Config/CommandTree.vue";
+import { Icon } from "@iconify/vue";
 
 // buffer to base64 on browser
 const config = inject<Ref<Config>>("config");
@@ -76,6 +76,17 @@ const onDrop = async (e: DragEvent | Event) => {
   }
 };
 
+const addDirectory = async () => {
+  const result = await window.ipc.invoke("add:directory", {
+    name: "New Folder"
+  });
+
+  if (result?.error) {
+    dropAreaErrorMessage.value = result.error;
+  }
+  emit("change");
+};
+
 watch(
   () => dropAreaErrorMessage.value,
   () => {
@@ -115,27 +126,26 @@ watch(
             @change="onChangeIconSize"
           />
         </div>
+      </div>
+      <div class="right-side">
         <div
-          class="drop-area"
+          class="command-list-container"
           :class="{ drag }"
           @dragover.prevent="drag = true"
           @dragleave.prevent="drag = false"
           @drop.prevent="onDrop"
         >
-          <Icon
-            class="icon"
-            icon="mingcute:apple-line"
-            :width="24"
-            :height="24"
-          />
-          <p v-if="dropAreaErrorMessage">{{ dropAreaErrorMessage }}</p>
-          <p v-else>Drop *.app here</p>
+          <!-- <ConfigCommandList @change="emitChange" /> -->
+          <CommandTree />
+          <div class="empty-state" v-if="config?.commands.length === 0">
+            <p>アプリケーションは<br />まだ登録されてないよ</p>
+          </div>
         </div>
-      </div>
-      <div class="command-list-container">
-        <ConfigCommandList @change="emitChange" />
-        <div class="empty-state" v-if="config?.commands.length === 0">
-          <p>アプリケーションは<br />登録されてないよ</p>
+        <div class="list-actions">
+          <button class="add-directory" @click="addDirectory">
+            <Icon class="icon" icon="mingcute:new-folder-line" />
+            <span>フォルダ追加</span>
+          </button>
         </div>
       </div>
     </div>
@@ -148,9 +158,10 @@ watch(
   height: 480px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   display: grid;
-  grid-template-rows: 24px 1fr;
+  grid-template-rows: 32px 1fr;
   border-radius: 8px;
   background-color: rgba(0, 0, 0, 0.8);
+  overflow: hidden;
 }
 .options {
   display: flex;
@@ -165,35 +176,19 @@ watch(
   width: 100%;
   padding: 16px;
 }
+.right-side {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr 32px;
+}
 .command-list-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   overflow-y: scroll;
   flex-shrink: 0;
-}
-.drop-area {
-  margin: auto 0 0 0;
-  width: 100%;
-  height: 160px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.2);
-  border: 2px dashed rgba(255, 255, 255, 0.5);
-  color: rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
+
   &.drag {
-    border-color: rgba(255, 255, 255, 1);
-  }
-  .input {
-    display: none;
-  }
-  .icon {
-    color: rgba(255, 255, 255, 0.5);
+    border: 2px dashed rgba(255, 255, 255, 0.5);
   }
 }
 .input-field {

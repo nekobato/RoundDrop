@@ -29,36 +29,21 @@ dd {
 html {
   color: #ffffff;
   font-weight: normal;
-  font-size: 16px;
-  font-family: "Helvetica", Arial, "Hiragino Kaku Gothic Pro", "Hiragino Sans",
-    Meiryo, sans-serif;
+  font-size: 20px;
+  font-family:  Roboto, 'Segoe UI', 'Helvetica Neue', "Hiragino Kaku Gothic Pro", "Hiragino Sans", Meiryo, sans-serif;
   line-height: 1.5;
-  font-synthesis: none;
-  text-rendering: optimizeSpeed;
-  -ms-text-size-adjust: 100%;
-  -webkit-text-size-adjust: 100%;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  margin: 0;
-  background-color: transparent;
+  scroll-behavior: smooth;
+
 }
 
 body {
   min-height: 100%;
+  text-rendering: optimizeSpeed;
   background-color: transparent;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-  overflow: hidden;
-}
-
-#app {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  place-items: center;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
 }
 
 ul[class],

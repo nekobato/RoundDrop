@@ -282,11 +282,24 @@ app
         ...getCommands(),
         {
           id,
+          type: "command",
           name: name.replace(".app", ""),
           command: appPath
         }
       ]);
       return;
+    });
+
+    ipcMain.handle("add:directory", async (_, { name }) => {
+      setCommands([
+        ...getCommands(),
+        {
+          id: nanoid(),
+          type: "group",
+          name,
+          command: ""
+        }
+      ]);
     });
 
     ipcMain.handle("delete:command", (_, id) => {

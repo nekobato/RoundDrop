@@ -22,10 +22,8 @@ const exit = () => {
   display: flex;
   flex: 1 0 auto;
   align-items: center;
-  height: 24px;
   overflow: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
 }
 .rest {
   flex: 1;
@@ -39,7 +37,7 @@ const exit = () => {
   align-items: center;
   justify-content: center;
   width: 40px;
-  height: 24px;
+  height: 100%;
   padding: 0;
   margin: 0;
   border: none;
