@@ -4,6 +4,7 @@ import { Icon } from "@iconify/vue";
 import AppIcon from "./AppIcon.vue";
 import { AppCommand, type Config } from "../types/app";
 import { useSortable } from "@vueuse/integrations/useSortable";
+import { deepToRaw } from "@/utils";
 
 const config = inject<Ref<Config>>("config");
 const emit = defineEmits(["change"]);
@@ -27,10 +28,7 @@ const deleteCommand = async (command: AppCommand) => {
 // sortableCommandList側の変更
 watch(sortableCommandList, async (newValue) => {
   if (config?.value.commands && newValue !== config?.value.commands) {
-    await window.ipc.invoke(
-      "set:commands",
-      newValue.map((c) => toRaw(c))
-    );
+    await window.ipc.invoke("set:commands", deepToRaw(newValue));
     emit("change");
   }
 });
@@ -50,6 +48,7 @@ watch(commandList, async () => {
         class="app-icon"
         :image="'image://image/' + command.id + '.png'"
         :icon-size="config.iconSize"
+        :type="command.type"
       />
       <span class="name">{{ command.name }}</span>
       <button class="delete-button" @click="deleteCommand(command)">

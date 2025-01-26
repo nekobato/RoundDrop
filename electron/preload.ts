@@ -1,4 +1,9 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
+import {
+  contextBridge,
+  ipcRenderer,
+  type IpcRendererEvent,
+  webUtils
+} from "electron";
 
 contextBridge.exposeInMainWorld("ipc", {
   send(event: string, payload: any) {
@@ -18,6 +23,10 @@ contextBridge.exposeInMainWorld("ipc", {
 contextBridge.exposeInMainWorld("openUrl", (e: Event, url: string) => {
   e.preventDefault();
   ipcRenderer.send("open-url", { data: url });
+});
+
+contextBridge.exposeInMainWorld("getFilePath", (file: File) => {
+  return webUtils.getPathForFile(file);
 });
 
 contextBridge.exposeInMainWorld("removeLoading", () => {

@@ -9,7 +9,8 @@ import {
   type MenuItem,
   type MenuItemConstructorOptions,
   protocol,
-  net
+  net,
+  webUtils
 } from "electron";
 import { nanoid } from "nanoid/non-secure";
 import path from "node:path";
@@ -272,11 +273,40 @@ app
       return setCommands(payload);
     });
 
-    ipcMain.handle("add:appCommand", async (_, { name, appPath }) => {
-      console.log(appPath, name);
+    ipcMain.handle(
+      "add:appCommand",
+      async (_, file: { path: string; name: string }) => {
+        console.log(file);
+        const id = nanoid();
+        await saveIconImage(id, file.path);
 
+        setCommands([
+          ...getCommands(),
+          {
+            id,
+            type: "command",
+            name: file.name.replace(".app", ""),
+            command: file.path
+          }
+        ]);
+        return;
+      }
+    );
+
+    ipcMain.handle("add:application", async () => {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        properties: ["openFile"],
+        filters: [{ name: "Application", extensions: ["app"] }]
+      });
+
+      if (canceled || !filePaths) {
+        return;
+      }
+
+      const filePath = filePaths[0];
+      const name = path.basename(filePath);
       const id = nanoid();
-      await saveIconImage(id, appPath);
+      await saveIconImage(id, filePath);
 
       setCommands([
         ...getCommands(),
@@ -284,10 +314,9 @@ app
           id,
           type: "command",
           name: name.replace(".app", ""),
-          command: appPath
+          command: filePath
         }
       ]);
-      return;
     });
 
     ipcMain.handle("add:directory", async (_, { name }) => {

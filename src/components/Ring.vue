@@ -2,7 +2,8 @@
 import { Ref, computed, inject, onMounted, ref } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
-import { Config } from "../types/app";
+import { AppCommand, Config } from "../types/app";
+import { findNodeDepthById } from "./Config/treeUtil";
 
 const props = defineProps({
   visible: {
@@ -17,9 +18,16 @@ const props = defineProps({
 
 const config = inject<Ref<Config>>("config");
 
-const commandList = ref<HTMLElement | null>(null);
+const rootCommands = computed(() => {
+  return config?.value.commands;
+});
+
+const commands = ref<AppCommand[]>(rootCommands.value || []);
+const dirDepths = ref<string[]>([]);
+
+const commandListElement = ref<HTMLElement | null>(null);
 const focusIndex = ref(0);
-const itemLength = computed(() => config?.value.commands.length || 1);
+const itemLength = computed(() => commands.value.length || 1);
 const pauseTransition = ref(false);
 
 const commandStyle = computed(() => {
@@ -30,13 +38,22 @@ const commandStyle = computed(() => {
 
 const iconName = computed(() => {
   const item =
-    config?.value.commands[
+    commands.value[
       focusIndex.value < 0
         ? itemLength.value + focusIndex.value
         : focusIndex.value
     ];
   return item?.name;
 });
+
+const moveIntoGroup = (id: string) => {
+  const group = commands.value.find((command) => command.id === id);
+  if (group?.children) {
+    commands.value = group.children;
+    dirDepths.value.push(group.id);
+    focusIndex.value = 0;
+  }
+};
 
 const commandItemStyle = (index: number) => {
   const angle = (index * 360) / itemLength.value;
@@ -63,6 +80,23 @@ const onKeyDownLeft = () => {
   focusIndex.value -= 1;
 };
 
+const onKeyDownUp = () => {
+  if (dirDepths.value.length === 0 || !rootCommands.value) {
+    return;
+  }
+
+  const parentGroup = findNodeDepthById(
+    rootCommands.value,
+    dirDepths.value[dirDepths.value.length - 1]
+  );
+
+  if (parentGroup) {
+    commands.value = parentGroup;
+    dirDepths.value.pop();
+    focusIndex.value = 0;
+  }
+};
+
 const onKeyDownEnter = () => {
   const item =
     config?.value.commands[
@@ -70,8 +104,10 @@ const onKeyDownEnter = () => {
         ? itemLength.value + focusIndex.value
         : focusIndex.value
     ];
-  if (item?.command) {
+  if (item?.type === "command") {
     window.ipc.send("open-path", item.command);
+  } else if (item?.id) {
+    moveIntoGroup(item.id);
   }
 };
 
@@ -97,7 +133,7 @@ const onAfterEnter = () => {
   if (props.noTransition) {
     return;
   }
-  commandList.value?.focus();
+  commandListElement.value?.focus();
   window.ipc.send("ring:opened");
 };
 
@@ -109,7 +145,7 @@ const onAfterLeave = () => {
 };
 
 onMounted(() => {
-  commandList.value?.focus();
+  commandListElement.value?.focus();
 });
 </script>
 
@@ -119,6 +155,7 @@ onMounted(() => {
     appear
     @after-leave="onAfterLeave"
     @after-enter="onAfterEnter"
+    :key="dirDepths.join('-')"
     v-if="config"
   >
     <div class="ring-command-container" v-show="props.visible">
@@ -128,16 +165,17 @@ onMounted(() => {
           :class="{ pause: pauseTransition }"
           @keydown.right="onKeyDownRight"
           @keydown.left="onKeyDownLeft"
+          @keydown.up="onKeyDownUp"
           @keydown.esc="close"
-          ref="commandList"
+          ref="commandListElement"
           tabindex="0"
           :style="commandStyle"
           @transitionend.stop="onListTransitionEnd"
           @keydown.enter="onKeyDownEnter"
         >
           <li
-            v-for="(item, index) in config.commands"
-            :key="index"
+            v-for="(item, index) in commands"
+            :key="item.id"
             :style="commandItemStyle(index)"
             :class="[
               {
@@ -154,6 +192,7 @@ onMounted(() => {
                 class="icon"
                 :image="'image://image/' + item.id + '.png'"
                 :iconSize="config.iconSize"
+                :type="item.type"
                 :style="commandItemIconStyle(index)"
               />
             </div>
@@ -218,7 +257,6 @@ $icon-size-3: 64px;
     height: 100%;
     position: absolute;
     top: 0;
-    transform-origin: 0 50%;
     transition: transform $animation-duration $animation-function-enter;
     transform-origin: 50% 50%;
     will-change: transform;

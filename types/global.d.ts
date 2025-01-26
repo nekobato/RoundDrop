@@ -13,6 +13,7 @@ declare global {
       ) => void;
     };
     openUrl: (e: Event, url: string) => void;
+    getFilePath: (file: File) => string;
     removeLoading: () => void;
   }
 }
