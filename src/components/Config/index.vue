@@ -3,7 +3,7 @@ import { Ref, computed, inject, ref } from "vue";
 import { AppCommand, Config } from "@/types/app";
 import { deepToRaw, keyboardEventToElectronAccelerator } from "@/utils";
 import WindowHeader from "./WindowHeader.vue";
-import CommandTree from "./Config/CommandTree.vue";
+import CommandTree from "./CommandTree.vue";
 import { Icon } from "@iconify/vue";
 import { ElMessage } from "element-plus";
 

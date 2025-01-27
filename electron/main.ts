@@ -331,19 +331,8 @@ app
       ]);
     });
 
-    ipcMain.handle("delete:command", (_, id) => {
-      const commands = getCommands();
-      const deleteCommand = commands.find((command) => {
-        return command.id === id;
-      });
-      if (deleteCommand) {
-        deleteImage(deleteCommand.id);
-      }
-      setCommands(
-        commands.filter((command) => {
-          return command.id !== id;
-        })
-      );
+    ipcMain.handle("remove:commandImage", (_, id) => {
+      return deleteImage(id);
     });
 
     ipcMain.on("open-path", (_, path) => {

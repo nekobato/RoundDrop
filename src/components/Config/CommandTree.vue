@@ -82,15 +82,16 @@ const nodeDrop = (node: Node, dropNode: Node, type: DropType) => {
   emit("change", newTree);
 };
 
-const remove = (data: AppCommand) => {
+const remove = async (data: AppCommand) => {
   const currentTree = config?.value.commands;
 
   if (!currentTree) {
     return;
   }
 
-  const newTree = removeAndCapture(currentTree, data.id);
+  const { newTree } = removeAndCapture(currentTree, data.id);
   emit("change", newTree);
+  await window.ipc.invoke("remove:commandImage", data.id);
 };
 </script>
 

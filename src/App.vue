@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, provide } from "vue";
 import Ring from "@/components/Ring.vue";
-import Config from "./components/Config.vue";
+import Config from "./components/Config/index.vue";
 import { defaultConfig } from "./utils";
 
 const config = ref(defaultConfig);
