@@ -141,6 +141,9 @@ const onAfterLeave = () => {
   if (props.noTransition) {
     return;
   }
+  dirDepths.value = [];
+  commands.value = rootCommands.value || [];
+  focusIndex.value = 0;
   window.ipc.send("ring:closed");
 };
 
