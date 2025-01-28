@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, provide } from "vue";
-import RoundDrop from "@/components/Ring.vue";
-import Config from "./components/Config.vue";
+import Ring from "@/components/Ring.vue";
+import Config from "./components/Config/index.vue";
 import { defaultConfig } from "./utils";
 
 const config = ref(defaultConfig);
@@ -35,7 +35,6 @@ onMounted(async () => {
   window.postMessage("removeLoading");
 
   config.value = await window.ipc.invoke("get:config");
-  console.log(config.value);
   if (config.value.commands.length === 0) {
     window.ipc.send("config:open");
     showConfig.value = true;
@@ -47,10 +46,11 @@ onMounted(async () => {
 
 <template>
   <div class="scrim" v-if="showCommand" />
-  <RoundDrop
+  <Ring
     class="ring-command"
     :visible="showCommand"
     :no-transition="showConfig"
+    v-if="config.commands.length > 0"
   />
   <Config
     class="config"

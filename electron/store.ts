@@ -1,5 +1,5 @@
 import Store from "electron-store";
-import { Config } from "../src/types/app";
+import { AppCommand, Config } from "../src/types/app";
 
 export const store = new Store<Config>({
   name: "config",
@@ -23,6 +23,9 @@ export const store = new Store<Config>({
         type: "object",
         properties: {
           id: {
+            type: "string"
+          },
+          type: {
             type: "string"
           },
           name: {
@@ -55,7 +58,7 @@ export const setShortcut = ({ name, command }) => {
   store.set(`shortcuts.${name}`, command);
 };
 
-export const setIconSize = (iconSize) => {
+export const setIconSize = (iconSize: number) => {
   store.set("iconSize", iconSize);
 };
 
@@ -63,6 +66,6 @@ export const getCommands = () => {
   return store.get("commands");
 };
 
-export const setCommands = (commands) => {
+export const setCommands = (commands: AppCommand[]) => {
   store.set("commands", commands);
 };

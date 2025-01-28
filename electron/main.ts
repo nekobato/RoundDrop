@@ -9,7 +9,8 @@ import {
   type MenuItem,
   type MenuItemConstructorOptions,
   protocol,
-  net
+  net,
+  webUtils
 } from "electron";
 import { nanoid } from "nanoid/non-secure";
 import path from "node:path";
@@ -226,14 +227,12 @@ app
     ipcMain.on("ring:toggle", toggleRing);
 
     ipcMain.on("ring:opened", () => {
-      console.log("ring:opened");
       win?.setIgnoreMouseEvents(false);
       win?.focus();
       isAnimation = false;
     });
 
     ipcMain.on("ring:closed", () => {
-      console.log("ring:closed");
       win?.setIgnoreMouseEvents(true);
       win?.blur();
       win?.hide();
@@ -272,36 +271,65 @@ app
       return setCommands(payload);
     });
 
-    ipcMain.handle("add:appCommand", async (_, { name, appPath }) => {
-      console.log(appPath, name);
+    ipcMain.handle(
+      "add:appCommand",
+      async (_, file: { path: string; name: string }) => {
+        const id = nanoid();
+        await saveIconImage(id, file.path);
 
+        setCommands([
+          ...getCommands(),
+          {
+            id,
+            type: "command",
+            name: file.name.replace(".app", ""),
+            command: file.path
+          }
+        ]);
+        return;
+      }
+    );
+
+    ipcMain.handle("add:application", async () => {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        properties: ["openFile"],
+        filters: [{ name: "Application", extensions: ["app"] }]
+      });
+
+      if (canceled || !filePaths) {
+        return;
+      }
+
+      const filePath = filePaths[0];
+      const name = path.basename(filePath);
       const id = nanoid();
-      await saveIconImage(id, appPath);
+      await saveIconImage(id, filePath);
 
       setCommands([
         ...getCommands(),
         {
           id,
+          type: "command",
           name: name.replace(".app", ""),
-          command: appPath
+          command: filePath
         }
       ]);
-      return;
     });
 
-    ipcMain.handle("delete:command", (_, id) => {
-      const commands = getCommands();
-      const deleteCommand = commands.find((command) => {
-        return command.id === id;
-      });
-      if (deleteCommand) {
-        deleteImage(deleteCommand.id);
-      }
-      setCommands(
-        commands.filter((command) => {
-          return command.id !== id;
-        })
-      );
+    ipcMain.handle("add:directory", async (_, { name }) => {
+      setCommands([
+        ...getCommands(),
+        {
+          id: nanoid(),
+          type: "group",
+          name,
+          command: ""
+        }
+      ]);
+    });
+
+    ipcMain.handle("remove:commandImage", (_, id) => {
+      return deleteImage(id);
     });
 
     ipcMain.on("open-path", (_, path) => {

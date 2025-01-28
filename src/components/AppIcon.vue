@@ -1,18 +1,25 @@
 <script setup lang="ts">
+import { Icon } from "@iconify/vue";
+
 const props = defineProps({
   image: {
     type: String,
-    required: true
+    required: false
   },
   iconSize: {
     type: Number,
+    required: true
+  },
+  type: {
+    type: String,
     required: true
   }
 });
 </script>
 <template>
   <div class="image-container" :class="`size-${props.iconSize}`">
-    <img :src="props.image" />
+    <img v-if="props.type === 'command'" class="icon" :src="props.image" />
+    <Icon v-else class="icon" icon="mingcute:folder-fill" />
   </div>
 </template>
 <style scoped lang="scss">
@@ -39,10 +46,11 @@ const props = defineProps({
     height: 64px;
   }
 
-  img {
+  .icon {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    color: var(--color-grey-100);
   }
 }
 </style>
