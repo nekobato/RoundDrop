@@ -10,8 +10,7 @@
   "license": "MIT",
   "description": "Ring UI Application Launcher for macOS",
   "scripts": {
-    "prepare": "pnpm copy-binary",
-    "copy-binary": "node script/copyBinary",
+    "postinstall": "rm -rf node_modules/electron/dist && node node_modules/electron/install.js",
     "dev": "vite",
     "build": "vue-tsc && vite build && electron-builder --config electron-builder.config.cjs",
     "release": "vite build && electron-builder --publish always --config electron-builder.config.cjs",

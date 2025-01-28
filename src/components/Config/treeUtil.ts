@@ -1,5 +1,4 @@
 import { AppCommand } from "@/types/app";
-import { App } from "electron";
 
 type Tree = AppCommand[];
 

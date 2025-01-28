@@ -25,19 +25,16 @@ const config = {
     category: "public.app-category.productivity",
     entitlements: "build/entitlements.mac.plist",
     entitlementsInherit: "build/entitlements.mac.plist",
-    notarize: {
-      teamId: process.env.APPLE_TEAM_ID
-    },
     publish: ["github"]
   },
-  win: {
-    target: [
-      {
-        target: "nsis",
-        arch: ["x64"]
-      }
-    ]
-  },
+  // win: {
+  //   target: [
+  //     {
+  //       target: "nsis",
+  //       arch: ["x64"]
+  //     }
+  //   ]
+  // },
   nsis: {
     oneClick: false,
     perMachine: false,
