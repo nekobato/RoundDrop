@@ -227,14 +227,12 @@ app
     ipcMain.on("ring:toggle", toggleRing);
 
     ipcMain.on("ring:opened", () => {
-      console.log("ring:opened");
       win?.setIgnoreMouseEvents(false);
       win?.focus();
       isAnimation = false;
     });
 
     ipcMain.on("ring:closed", () => {
-      console.log("ring:closed");
       win?.setIgnoreMouseEvents(true);
       win?.blur();
       win?.hide();
@@ -276,7 +274,6 @@ app
     ipcMain.handle(
       "add:appCommand",
       async (_, file: { path: string; name: string }) => {
-        console.log(file);
         const id = nanoid();
         await saveIconImage(id, file.path);
 
