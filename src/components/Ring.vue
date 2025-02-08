@@ -99,14 +99,19 @@ const onKeyDownUp = () => {
 
 const onKeyDownEnter = () => {
   const item =
-    config?.value.commands[
+    commands.value[
       focusIndex.value < 0
         ? itemLength.value + focusIndex.value
         : focusIndex.value
     ];
-  if (item?.type === "command") {
+
+  if (!item) {
+    return;
+  }
+
+  if (item.type === "command") {
     window.ipc.send("open-path", item.command);
-  } else if (item?.id) {
+  } else if (item.id) {
     moveIntoGroup(item.id);
   }
 };
