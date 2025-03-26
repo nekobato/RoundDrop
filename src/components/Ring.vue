@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ref, computed, inject, onMounted, ref } from "vue";
+import { Ref, computed, inject, onMounted, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
 import { AppCommand, Config } from "../types/app";
@@ -151,6 +151,17 @@ const onAfterLeave = () => {
   focusIndex.value = 0;
   window.ipc.send("ring:closed");
 };
+
+// commandsに変更があったら状態をリセット
+watch(
+  rootCommands,
+  (newCommands) => {
+    commands.value = newCommands || [];
+    dirDepths.value = [];
+    focusIndex.value = 0;
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   commandListElement.value?.focus();
