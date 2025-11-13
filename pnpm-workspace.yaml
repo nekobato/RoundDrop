@@ -1,0 +1,8 @@
+ignoredBuiltDependencies:
+  - '@parcel/watcher'
+  - phantomjs-prebuilt
+  - vue-demi
+
+onlyBuiltDependencies:
+  - electron
+  - esbuild
