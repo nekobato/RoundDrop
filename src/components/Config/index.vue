@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Ref, computed, inject, ref } from "vue";
 import { AppCommand, Config } from "@/types/app";
-import { deepToRaw, keyboardEventToElectronAccelerator } from "@/utils";
+import { defaultConfig, deepToRaw, keyboardEventToElectronAccelerator } from "@/utils";
 import WindowHeader from "./WindowHeader.vue";
 import CommandTree from "./CommandTree.vue";
 import { Icon } from "@iconify/vue";
@@ -9,14 +9,16 @@ import { ElMessage } from "element-plus";
 
 // buffer to base64 on browser
 const config = inject<Ref<Config>>("config");
+const currentConfig = computed(() => config?.value ?? defaultConfig);
 const emit = defineEmits(["change", "close"]);
 const drag = ref(false);
+const dragDepth = ref(0);
 const shortcutInput = ref<HTMLInputElement>();
 
 const iconSize = computed(() => {
   const sizes = ["24", "32", "48", "64"];
-  if (config?.value.iconSize !== undefined) {
-    return sizes[config.value.iconSize];
+  if (currentConfig.value.iconSize !== undefined) {
+    return sizes[currentConfig.value.iconSize];
   } else {
     return "--";
   }
@@ -54,6 +56,25 @@ const focusShortcutInput = () => {
   shortcutInput.value?.focus();
 };
 
+const onDragEnter = (e: DragEvent) => {
+  e.preventDefault();
+  dragDepth.value += 1;
+  drag.value = true;
+};
+
+const onDragLeave = (e: DragEvent) => {
+  e.preventDefault();
+  dragDepth.value = Math.max(dragDepth.value - 1, 0);
+  if (dragDepth.value === 0) {
+    drag.value = false;
+  }
+};
+
+const resetDragState = () => {
+  dragDepth.value = 0;
+  drag.value = false;
+};
+
 const onDrop = async (e: DragEvent | Event) => {
   const file = (e as DragEvent).dataTransfer?.files[0];
   if (file?.name && file.name.split(".").pop() === "app") {
@@ -66,10 +87,11 @@ const onDrop = async (e: DragEvent | Event) => {
       ElMessage.error(result.error);
     }
 
-    drag.value = false;
+    resetDragState();
     emit("change");
   } else {
     ElMessage.error("*.app ファイルのみ 追加できます");
+    resetDragState();
   }
 };
 
@@ -106,8 +128,9 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
     <WindowHeader @exit="onExit" />
     <div
       class="config-contents"
-      @dragover.prevent="drag = true"
-      @dragleave.prevent="drag = false"
+      @dragover.prevent
+      @dragenter.prevent="onDragEnter"
+      @dragleave.prevent="onDragLeave"
       @drop.prevent="onDrop"
     >
       <div class="options">
@@ -116,7 +139,7 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
           <input
             id="shortcut"
             type="text"
-            :value="config?.shortcuts.toggleCommand"
+            :value="currentConfig.shortcuts.toggleCommand"
             @keydown.prevent="onKeyDownOnShortcut"
             readonly
             @click="focusShortcutInput"
@@ -131,7 +154,7 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
             type="range"
             min="0"
             max="3"
-            :value="config?.iconSize"
+            :value="currentConfig.iconSize"
             @change="onChangeIconSize"
           />
         </div>
@@ -143,7 +166,7 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
             class="command-tree"
             :class="{ 'on-filedrag': drag }"
           />
-          <div class="empty-state" v-if="config?.commands.length === 0">
+          <div class="empty-state" v-if="currentConfig.commands.length === 0">
             <p>アプリケーションは<br />まだ登録されてないよ</p>
           </div>
         </div>

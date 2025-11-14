@@ -18,9 +18,18 @@ const props = defineProps({
 
 const config = inject<Ref<Config>>("config");
 
+const runningApps = inject<Ref<Record<string, boolean>>>("runningApps");
+
 const rootCommands = computed(() => {
   return config?.value.commands;
 });
+
+const isAppRunning = (id: string) => {
+  if (!runningApps?.value) {
+    return false;
+  }
+  return Boolean(runningApps.value[id]);
+};
 
 const commands = ref<AppCommand[]>(rootCommands.value || []);
 const dirDepths = ref<string[]>([]);
@@ -212,6 +221,7 @@ onMounted(() => {
                 :image="'image://image/' + item.id + '.png'"
                 :iconSize="config.iconSize"
                 :type="item.type"
+                :isRunning="isAppRunning(item.id)"
                 :style="commandItemIconStyle(index)"
               />
             </div>

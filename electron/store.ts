@@ -1,21 +1,47 @@
 import Store from "electron-store";
 import { AppCommand, Config } from "../src/types/app";
 
+const DEFAULT_CONFIG: Config = {
+  shortcuts: {
+    toggleCommand: "Control+Alt+Z"
+  },
+  iconSize: 3,
+  commands: []
+};
+
+const normalizeConfig = (config?: Partial<Config>): Config => {
+  return {
+    shortcuts: {
+      ...DEFAULT_CONFIG.shortcuts,
+      ...(config?.shortcuts ?? {})
+    },
+    iconSize:
+      typeof config?.iconSize === "number" ? config.iconSize : DEFAULT_CONFIG.iconSize,
+    commands: Array.isArray(config?.commands)
+      ? config.commands
+      : [...DEFAULT_CONFIG.commands]
+  };
+};
+
 export const store = new Store<Config>({
   name: "config",
+  defaults: DEFAULT_CONFIG,
   schema: {
     shortcuts: {
       type: "object",
+      default: DEFAULT_CONFIG.shortcuts,
       properties: {
         toggleCommand: {
           type: "string",
-          default: "Control+Alt+Z"
+          default: DEFAULT_CONFIG.shortcuts.toggleCommand
         }
-      }
+      },
+      required: ["toggleCommand"],
+      additionalProperties: false
     },
     iconSize: {
       type: "number",
-      default: 3
+      default: DEFAULT_CONFIG.iconSize
     },
     commands: {
       type: "array",
@@ -33,25 +59,33 @@ export const store = new Store<Config>({
           },
           command: {
             type: "string"
+          },
+          bundleId: {
+            type: "string",
+            nullable: true
           }
-        }
+        },
+        required: ["id", "type", "name", "command"]
       },
-      default: []
+      default: DEFAULT_CONFIG.commands
     }
   },
   clearInvalidConfig: true
 });
 
+const ensureConfigHydrated = () => {
+  const normalized = normalizeConfig(store.store as Partial<Config>);
+  store.store = normalized;
+};
+
+ensureConfigHydrated();
+
 export const getConfig = () => {
-  return {
-    shortcuts: store.get("shortcuts"),
-    iconSize: store.get("iconSize"),
-    commands: store.get("commands")
-  };
+  return normalizeConfig(store.store as Partial<Config>);
 };
 
 export const getShortcuts = () => {
-  return store.get("shortcuts");
+  return getConfig().shortcuts;
 };
 
 export const setShortcut = ({ name, command }) => {
@@ -63,7 +97,7 @@ export const setIconSize = (iconSize: number) => {
 };
 
 export const getCommands = () => {
-  return store.get("commands");
+  return getConfig().commands;
 };
 
 export const setCommands = (commands: AppCommand[]) => {

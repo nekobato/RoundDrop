@@ -22,13 +22,15 @@
   },
   "dependencies": {
     "electron-store": "^11.0.2",
-    "file-icon": "^6.0.0"
+    "file-icon": "^6.0.0",
+    "plist": "^3.1.0"
   },
   "devDependencies": {
     "@electron/notarize": "^3.1.1",
     "@iconify/vue": "^5.0.0",
     "@sentry/electron": "^7.2.0",
     "@types/node": "^24.10.1",
+    "@types/plist": "^3.0.5",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vueuse/integrations": "^14.0.0",
     "electron": "^39.1.2",

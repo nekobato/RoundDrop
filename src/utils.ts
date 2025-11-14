@@ -2,9 +2,9 @@ import { isProxy, isReactive, isRef, toRaw } from "vue";
 
 export const defaultConfig = {
   shortcuts: {
-    toggleCommand: ""
+    toggleCommand: "Control+Alt+Z"
   },
-  iconSize: 0,
+  iconSize: 3,
   commands: []
 };
 

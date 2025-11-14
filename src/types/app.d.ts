@@ -3,6 +3,7 @@ export type AppCommand = {
   type: "command" | "group";
   name: string;
   command: string;
+  bundleId?: string;
   children?: AppCommand[];
 };
 

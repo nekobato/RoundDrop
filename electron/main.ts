@@ -31,6 +31,14 @@ import {
   imageDirPath,
   saveIconImage
 } from "./utils/image";
+import {
+  ensureBundleIdsInCommands,
+  getBundleIdFromApp
+} from "./utils/appMetadata";
+import {
+  createRunningAppsWatcher,
+  type RunningAppsState
+} from "./utils/runningApps";
 
 initSentry();
 
@@ -42,6 +50,15 @@ if (!app.requestSingleInstanceLock()) {
 let win: BrowserWindow | null;
 let isVisible = false;
 let isAnimation = false;
+let runningAppsState: RunningAppsState = {};
+
+const runningAppsWatcher = createRunningAppsWatcher({
+  getCommands,
+  onUpdate: (state) => {
+    runningAppsState = state;
+    win?.webContents.send("running-apps:update", state);
+  }
+});
 
 function openConfig() {
   win?.setIgnoreMouseEvents(false);
@@ -178,7 +195,7 @@ function createWindow() {
   }
   win.setIgnoreMouseEvents(true);
   if (statics.VITE_DEV_SERVER_URL) {
-    win.webContents.openDevTools();
+    win.webContents.openDevTools({ mode: "detach" });
   }
 }
 
@@ -199,6 +216,7 @@ app.on("activate", () => {
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
+  runningAppsWatcher.stop();
 });
 
 checkUpdate();
@@ -218,11 +236,19 @@ app
   .whenReady()
   .then(setMenu)
   .then(createWindow)
-  .then(() => {
+  .then(async () => {
     const config = getConfig();
     if (config.commands.length !== 0) {
       setGlobalShortcut();
     }
+
+    const { changed, commands } = await ensureBundleIdsInCommands(
+      config.commands
+    );
+    if (changed) {
+      setCommands(commands);
+    }
+    runningAppsWatcher.start();
 
     ipcMain.on("ring:toggle", toggleRing);
 
@@ -267,8 +293,13 @@ app
       return getCommands();
     });
 
-    ipcMain.handle("set:commands", (_, payload) => {
-      return setCommands(payload);
+    ipcMain.handle("get:running-apps", () => {
+      return runningAppsState;
+    });
+
+    ipcMain.handle("set:commands", async (_, payload) => {
+      const { commands } = await ensureBundleIdsInCommands(payload);
+      return setCommands(commands);
     });
 
     ipcMain.handle(
@@ -276,6 +307,7 @@ app
       async (_, file: { path: string; name: string }) => {
         const id = nanoid();
         await saveIconImage(id, file.path);
+        const bundleId = await getBundleIdFromApp(file.path);
 
         setCommands([
           ...getCommands(),
@@ -283,7 +315,8 @@ app
             id,
             type: "command",
             name: file.name.replace(".app", ""),
-            command: file.path
+            command: file.path,
+            bundleId
           }
         ]);
         return;
@@ -304,6 +337,7 @@ app
       const name = path.basename(filePath);
       const id = nanoid();
       await saveIconImage(id, filePath);
+      const bundleId = await getBundleIdFromApp(filePath);
 
       setCommands([
         ...getCommands(),
@@ -311,7 +345,8 @@ app
           id,
           type: "command",
           name: name.replace(".app", ""),
-          command: filePath
+          command: filePath,
+          bundleId
         }
       ]);
     });

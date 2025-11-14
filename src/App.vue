@@ -5,9 +5,15 @@ import Config from "./components/Config/index.vue";
 import { defaultConfig } from "./utils";
 
 const config = ref(defaultConfig);
+const runningApps = ref<Record<string, boolean>>({});
 provide("config", config);
+provide("runningApps", runningApps);
 const showCommand = ref(false);
 const showConfig = ref(false);
+
+const applyRunningApps = (payload?: Record<string, boolean>) => {
+  runningApps.value = payload ?? {};
+};
 
 const onChangeConfig = async () => {
   config.value = await window.ipc.invoke("get:config");
@@ -31,6 +37,10 @@ window.ipc.on("ring:config", () => {
   showConfig.value = true;
 });
 
+window.ipc.on("running-apps:update", (_, payload: Record<string, boolean>) => {
+  applyRunningApps(payload);
+});
+
 onMounted(async () => {
   window.postMessage("removeLoading");
 
@@ -39,6 +49,9 @@ onMounted(async () => {
     window.ipc.send("config:open");
     showConfig.value = true;
   }
+
+  const initialRunningApps = await window.ipc.invoke("get:running-apps");
+  applyRunningApps(initialRunningApps);
 
   window.removeLoading();
 });
