@@ -21,13 +21,13 @@ const props = defineProps({
 });
 </script>
 <template>
-  <div
-    class="image-container"
-    :class="[`size-${props.iconSize}`, { running: props.isRunning }]"
-  >
+  <div class="image-container" :class="[`size-${props.iconSize}`]">
     <img v-if="props.type === 'command'" class="icon" :src="props.image" />
     <Icon v-else class="icon" icon="mingcute:folder-fill" />
-    <span v-if="props.isRunning && props.type === 'command'" class="running-indicator" />
+    <span
+      v-if="props.isRunning && props.type === 'command'"
+      class="running-indicator"
+    />
   </div>
 </template>
 <style scoped lang="scss">
@@ -53,10 +53,6 @@ const props = defineProps({
   &.size-3 {
     width: 64px;
     height: 64px;
-  }
-
-  &.running {
-    box-shadow: 0 0 14px rgba(58, 206, 109, 0.45);
   }
 
   .icon {
