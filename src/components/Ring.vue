@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ref, computed, inject, onMounted, ref, watch } from "vue";
+import { CSSProperties, Ref, computed, inject, onMounted, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
 import { AppCommand, Config } from "../types/app";
@@ -20,6 +20,9 @@ const config = inject<Ref<Config>>("config");
 
 const runningApps = inject<Ref<Record<string, boolean>>>("runningApps");
 
+const ICON_PIXEL_SIZES = [24, 32, 48, 64] as const;
+const BASE_RING_SIZE = 320;
+
 const rootCommands = computed(() => {
   return config?.value.commands;
 });
@@ -39,21 +42,40 @@ const focusIndex = ref(0);
 const itemLength = computed(() => commands.value.length || 1);
 const pauseTransition = ref(false);
 
+const rotationPerItem = computed(() => 360 / itemLength.value);
+
+const normalizedFocusIndex = computed(() => {
+  const len = itemLength.value;
+  if (!len) return 0;
+  const mod = focusIndex.value % len;
+  return mod >= 0 ? mod : len + mod;
+});
+
+const iconSizePx = computed(() => {
+  const sizeIndex = config?.value.iconSize ?? 2;
+  return ICON_PIXEL_SIZES[sizeIndex] ?? ICON_PIXEL_SIZES[2];
+});
+
+const ringSize = computed(() => {
+  const gapPx = Math.max(8, iconSizePx.value * 0.35);
+  const circumferenceNeeded = itemLength.value * (iconSizePx.value + gapPx);
+  const requiredRadius = circumferenceNeeded / (2 * Math.PI);
+  const sizeFromSpacing = iconSizePx.value + requiredRadius * Math.SQRT2;
+  return Math.max(BASE_RING_SIZE, Math.ceil(sizeFromSpacing));
+});
+
+const ringStyle = computed(() => ({
+  width: `${ringSize.value}px`,
+  height: `${ringSize.value}px`
+}));
+
 const commandStyle = computed(() => {
   return {
-    transform: `rotate(${(360 / itemLength.value) * -focusIndex.value}deg)`
+    transform: `rotate(${rotationPerItem.value * -focusIndex.value}deg)`
   };
 });
 
-const iconName = computed(() => {
-  const item =
-    commands.value[
-      focusIndex.value < 0
-        ? itemLength.value + focusIndex.value
-        : focusIndex.value
-    ];
-  return item?.name;
-});
+const iconName = computed(() => renderCommands.value[normalizedFocusIndex.value]?.name);
 
 const moveIntoGroup = (id: string) => {
   const group = commands.value.find((command) => command.id === id);
@@ -64,22 +86,24 @@ const moveIntoGroup = (id: string) => {
   }
 };
 
-const commandItemStyle = (index: number) => {
-  const angle = (index * 360) / itemLength.value;
-  return {
-    transform: `rotate(${angle}deg)`
-  };
+type RenderCommand = AppCommand & {
+  style: CSSProperties;
+  iconStyle: CSSProperties;
+  isFocus: boolean;
 };
 
-const commandItemIconStyle = (index: number) => {
-  const angle = -(
-    (index * 360) / itemLength.value -
-    (focusIndex.value * 360) / itemLength.value
-  );
-  return {
-    transform: `rotate(${angle}deg)`
-  };
-};
+const renderCommands = computed<RenderCommand[]>(() => {
+  return commands.value.map((item, index) => {
+    const angle = index * rotationPerItem.value;
+    const iconAngle = -(angle - focusIndex.value * rotationPerItem.value);
+    return {
+      ...item,
+      style: { transform: `rotate(${angle}deg)` },
+      iconStyle: { transform: `rotate(${iconAngle}deg)` },
+      isFocus: index === normalizedFocusIndex.value
+    };
+  });
+});
 
 const onKeyDownRight = () => {
   focusIndex.value += 1;
@@ -107,12 +131,7 @@ const onKeyDownUp = () => {
 };
 
 const onKeyDownEnter = () => {
-  const item =
-    commands.value[
-      focusIndex.value < 0
-        ? itemLength.value + focusIndex.value
-        : focusIndex.value
-    ];
+  const item = renderCommands.value[normalizedFocusIndex.value];
 
   if (!item) {
     return;
@@ -186,7 +205,11 @@ onMounted(() => {
     :key="dirDepths.join('-')"
     v-if="config"
   >
-    <div class="ring-command-container" v-show="props.visible">
+    <div
+      class="ring-command-container"
+      v-show="props.visible"
+      :style="ringStyle"
+    >
       <div class="ring-command-list outer">
         <ul
           class="ring-command-list inner"
@@ -202,17 +225,10 @@ onMounted(() => {
           @keydown.enter="onKeyDownEnter"
         >
           <li
-            v-for="(item, index) in commands"
+            v-for="item in renderCommands"
             :key="item.id"
-            :style="commandItemStyle(index)"
-            :class="[
-              {
-                focus:
-                  index ===
-                  (focusIndex < 0 ? itemLength + focusIndex : focusIndex)
-              },
-              `size-${config.iconSize}`
-            ]"
+            :style="item.style"
+            :class="[{ focus: item.isFocus }, `size-${config.iconSize}`]"
             @transitionend.stop
           >
             <div class="ring-command-item inner" @transitionend.stop>
@@ -222,16 +238,16 @@ onMounted(() => {
                 :iconSize="config.iconSize"
                 :type="item.type"
                 :isRunning="isAppRunning(item.id)"
-                :style="commandItemIconStyle(index)"
+                :style="item.iconStyle"
               />
             </div>
           </li>
         </ul>
       </div>
       <CommandCursor class="cursor" :class="`size-${config.iconSize}`" />
-      <span class="name" :class="`size-${config.iconSize}`">{{
-        iconName
-      }}</span>
+      <span class="name" :class="`size-${config.iconSize}`">
+        {{ iconName }}
+      </span>
     </div>
   </Transition>
 </template>
