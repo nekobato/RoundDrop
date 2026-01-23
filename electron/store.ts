@@ -1,5 +1,15 @@
+/**
+ * Persistent configuration store for the Electron main process.
+ */
 import Store from "electron-store";
 import { AppCommand, Config } from "../src/types/app";
+
+type ShortcutName = keyof Config["shortcuts"];
+
+type ShortcutPayload = {
+  name: ShortcutName;
+  command: string;
+};
 
 const DEFAULT_CONFIG: Config = {
   shortcuts: {
@@ -9,6 +19,9 @@ const DEFAULT_CONFIG: Config = {
   commands: []
 };
 
+/**
+ * Normalize config values with defaults.
+ */
 const normalizeConfig = (config?: Partial<Config>): Config => {
   return {
     shortcuts: {
@@ -16,7 +29,9 @@ const normalizeConfig = (config?: Partial<Config>): Config => {
       ...(config?.shortcuts ?? {})
     },
     iconSize:
-      typeof config?.iconSize === "number" ? config.iconSize : DEFAULT_CONFIG.iconSize,
+      typeof config?.iconSize === "number"
+        ? config.iconSize
+        : DEFAULT_CONFIG.iconSize,
     commands: Array.isArray(config?.commands)
       ? config.commands
       : [...DEFAULT_CONFIG.commands]
@@ -61,12 +76,10 @@ export const store = new Store<Config>({
             type: "string"
           },
           bundleId: {
-            type: "string",
-            nullable: true
+            type: ["string", "null"]
           },
           iconVersion: {
-            type: "number",
-            nullable: true
+            type: ["number", "null"]
           },
           children: {
             type: "array",
@@ -83,6 +96,9 @@ export const store = new Store<Config>({
   clearInvalidConfig: true
 });
 
+/**
+ * Ensure the stored config is normalized and complete.
+ */
 const ensureConfigHydrated = () => {
   const normalized = normalizeConfig(store.store as Partial<Config>);
   store.store = normalized;
@@ -90,26 +106,44 @@ const ensureConfigHydrated = () => {
 
 ensureConfigHydrated();
 
+/**
+ * Get the normalized config object.
+ */
 export const getConfig = () => {
   return normalizeConfig(store.store as Partial<Config>);
 };
 
+/**
+ * Get the shortcut configuration.
+ */
 export const getShortcuts = () => {
   return getConfig().shortcuts;
 };
 
-export const setShortcut = ({ name, command }) => {
+/**
+ * Update a shortcut command by name.
+ */
+export const setShortcut = ({ name, command }: ShortcutPayload) => {
   store.set(`shortcuts.${name}`, command);
 };
 
+/**
+ * Update the icon size.
+ */
 export const setIconSize = (iconSize: number) => {
   store.set("iconSize", iconSize);
 };
 
+/**
+ * Get the command list.
+ */
 export const getCommands = () => {
   return getConfig().commands;
 };
 
+/**
+ * Persist the command list.
+ */
 export const setCommands = (commands: AppCommand[]) => {
   store.set("commands", commands);
 };

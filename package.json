@@ -13,6 +13,7 @@
     "postinstall": "rm -rf node_modules/electron/dist && node node_modules/electron/install.js",
     "dev": "vite",
     "build": "vue-tsc && vite build && electron-builder --config electron-builder.config.cjs",
+    "typecheck": "vue-tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "release": "vite build && electron-builder --publish always --config electron-builder.config.cjs",
     "build:icon": "electron-icon-builder --input=./public/icon.png --output=./public"
   },
