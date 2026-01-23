@@ -2,7 +2,6 @@
 import { Ref, computed, inject, ref } from "vue";
 import { AppCommand, Config } from "@/types/app";
 import { defaultConfig, deepToRaw, keyboardEventToElectronAccelerator } from "@/utils";
-import WindowHeader from "./WindowHeader.vue";
 import CommandTree from "./CommandTree.vue";
 import { Icon } from "@iconify/vue";
 import { ElMessage } from "element-plus";
@@ -10,7 +9,7 @@ import { ElMessage } from "element-plus";
 // buffer to base64 on browser
 const config = inject<Ref<Config>>("config");
 const currentConfig = computed(() => config?.value ?? defaultConfig);
-const emit = defineEmits(["change", "close"]);
+const emit = defineEmits(["change"]);
 const drag = ref(false);
 const dragDepth = ref(0);
 const shortcutInput = ref<HTMLInputElement>();
@@ -46,10 +45,6 @@ const onChangeIconSize = async (e: Event) => {
     await window.ipc.invoke("set:iconSize", Number(size));
     emit("change");
   }
-};
-
-const onExit = () => {
-  emit("close");
 };
 
 const focusShortcutInput = () => {
@@ -125,7 +120,6 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
 
 <template>
   <div class="config">
-    <WindowHeader @exit="onExit" />
     <div
       class="config-contents"
       @dragover.prevent
@@ -135,7 +129,7 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
     >
       <div class="options">
         <div class="input-field">
-          <label for="shortcut">リングメニュー開閉ショートカット</label>
+          <label for="shortcut">キーボード ショートカット</label>
           <input
             id="shortcut"
             type="text"
@@ -188,12 +182,8 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
 
 <style scoped lang="scss">
 .config {
-  width: 640px;
-  height: 480px;
-  border: 1px solid var(--color-white-t200);
-  display: grid;
-  grid-template-rows: 32px 1fr;
-  border-radius: 8px;
+  width: 100%;
+  height: 100%;
   background-color: var(--color-black-t800);
   overflow: hidden;
 }
@@ -206,9 +196,10 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
 .config-contents {
   position: relative;
   display: grid;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: 200px 1fr;
   overflow-y: auto;
   width: 100%;
+  height: 100%;
   padding: 16px;
 }
 .right-side {

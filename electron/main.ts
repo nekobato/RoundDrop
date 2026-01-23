@@ -9,8 +9,7 @@ import {
   type MenuItem,
   type MenuItemConstructorOptions,
   protocol,
-  net,
-  webUtils
+  net
 } from "electron";
 import { nanoid } from "nanoid/non-secure";
 import path from "node:path";
@@ -49,6 +48,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let win: BrowserWindow | null;
+let configWin: BrowserWindow | null;
 let isVisible = false;
 let isAnimation = false;
 let runningAppsState: RunningAppsState = {};
@@ -61,28 +61,78 @@ const runningAppsWatcher = createRunningAppsWatcher({
   }
 });
 
+/**
+ * Notify renderer windows that config values have changed.
+ */
+const notifyConfigUpdated = () => {
+  win?.webContents.send("config:updated");
+  configWin?.webContents.send("config:updated");
+};
+
 function openConfig() {
-  win?.setIgnoreMouseEvents(false);
-  win?.setVisibleOnAllWorkspaces(false);
-  win?.setAlwaysOnTop(false);
-  win?.webContents.send("ring:config");
-  isVisible = true;
-  win?.setSize(640, 480);
-  win?.center();
-  win?.show();
-  win?.focus();
+  if (configWin && !configWin.isDestroyed()) {
+    configWin.show();
+    configWin.focus();
+    return;
+  }
+
+  isVisible = false;
+  isAnimation = false;
+  win?.webContents.send("ring:close");
+  win?.hide();
+  win?.setIgnoreMouseEvents(true);
+  win?.setVisibleOnAllWorkspaces(true);
+  win?.setAlwaysOnTop(true);
   globalShortcut.unregisterAll();
+
+  configWin = new BrowserWindow({
+    width: 680,
+    height: 480,
+    icon: path.join(statics.publicRoot, "icon.png"),
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    webPreferences: {
+      preload: statics.preload,
+      devTools: statics.VITE_DEV_SERVER_URL ? true : false
+    }
+  });
+
+  configWin.on("closed", () => {
+    configWin = null;
+    closeConfig();
+  });
+
+  if (statics.VITE_DEV_SERVER_URL) {
+    configWin.loadURL(`${statics.pageRoot}?window=config`);
+  } else {
+    configWin.loadFile(statics.pageRoot, {
+      query: { window: "config" }
+    });
+  }
+
+  configWin.once("ready-to-show", () => {
+    configWin?.show();
+    configWin?.focus();
+  });
 }
 
 function closeConfig() {
+  if (configWin && !configWin.isDestroyed()) {
+    configWin.close();
+    return;
+  }
+
   isVisible = false;
-  win?.hide();
   setLauncherWindowPosition();
   win?.setIgnoreMouseEvents(true);
   win?.setVisibleOnAllWorkspaces(true);
   win?.setAlwaysOnTop(true);
   win?.blur();
-  setGlobalShortcut();
+  const config = getConfig();
+  if (config.commands.length !== 0) {
+    setGlobalShortcut();
+  }
 }
 
 function setLauncherWindowPosition() {
@@ -99,6 +149,9 @@ function setLauncherWindowPosition() {
 }
 
 function toggleRing() {
+  if (configWin && !configWin.isDestroyed()) {
+    return;
+  }
   if (isAnimation) return;
   isAnimation = true;
   if (isVisible) {
@@ -208,6 +261,12 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
+  if (configWin && !configWin.isDestroyed()) {
+    configWin.show();
+    configWin.focus();
+    return;
+  }
+
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   } else {
@@ -283,11 +342,15 @@ app
     });
 
     ipcMain.handle("set:shortcuts", (_, payload) => {
-      return setShortcut(payload);
+      const result = setShortcut(payload);
+      notifyConfigUpdated();
+      return result;
     });
 
     ipcMain.handle("set:iconSize", (_, payload) => {
-      return setIconSize(payload);
+      const result = setIconSize(payload);
+      notifyConfigUpdated();
+      return result;
     });
 
     ipcMain.handle("get:commands", () => {
@@ -300,7 +363,9 @@ app
 
     ipcMain.handle("set:commands", async (_, payload) => {
       const { commands } = await ensureBundleIdsInCommands(payload);
-      return setCommands(commands);
+      const result = setCommands(commands);
+      notifyConfigUpdated();
+      return result;
     });
 
     ipcMain.handle(
@@ -320,6 +385,7 @@ app
             bundleId
           }
         ]);
+        notifyConfigUpdated();
         return;
       }
     );
@@ -350,6 +416,7 @@ app
           bundleId
         }
       ]);
+      notifyConfigUpdated();
     });
 
     ipcMain.handle("add:directory", async (_, { name }) => {
@@ -362,6 +429,7 @@ app
           command: ""
         }
       ]);
+      notifyConfigUpdated();
     });
 
     ipcMain.handle("set:groupIcon", async (_, { id }) => {
