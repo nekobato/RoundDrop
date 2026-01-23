@@ -142,6 +142,35 @@ export function changeName(tree: Tree, id: string, newName: string): Tree {
   });
 }
 
+/**
+ * 指定した id のノードに対してアイコン更新用のバージョンを設定する。
+ * - iconVersion が undefined の場合はプロパティを削除する。
+ */
+export function setIconVersion(
+  tree: Tree,
+  id: string,
+  iconVersion?: number
+): Tree {
+  return tree.map((node) => {
+    if (node.id === id) {
+      const nextNode = { ...node };
+      if (typeof iconVersion === "number") {
+        nextNode.iconVersion = iconVersion;
+      } else {
+        delete nextNode.iconVersion;
+      }
+      return nextNode;
+    }
+    if (node.children) {
+      return {
+        ...node,
+        children: setIconVersion(node.children, id, iconVersion)
+      };
+    }
+    return node;
+  });
+}
+
 export function findNodeById(tree: Tree, id: string): AppCommand | undefined {
   for (const node of tree) {
     if (node.id === id) {

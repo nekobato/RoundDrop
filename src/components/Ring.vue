@@ -34,6 +34,16 @@ const isAppRunning = (id: string) => {
   return Boolean(runningApps.value[id]);
 };
 
+const createIconSrc = (item: AppCommand) => {
+  if (item.type === "command") {
+    return `image://image/${item.id}.png`;
+  }
+  if (typeof item.iconVersion === "number") {
+    return `image://image/${item.id}.png?v=${item.iconVersion}`;
+  }
+  return undefined;
+};
+
 const commands = ref<AppCommand[]>(rootCommands.value || []);
 const dirDepths = ref<string[]>([]);
 
@@ -234,7 +244,7 @@ onMounted(() => {
             <div class="ring-command-item inner" @transitionend.stop>
               <AppIcon
                 class="icon"
-                :image="'image://image/' + item.id + '.png'"
+                :image="createIconSrc(item)"
                 :iconSize="config.iconSize"
                 :type="item.type"
                 :isRunning="isAppRunning(item.id)"

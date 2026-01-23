@@ -4,6 +4,7 @@ export type AppCommand = {
   name: string;
   command: string;
   bundleId?: string;
+  iconVersion?: number;
   children?: AppCommand[];
 };
 

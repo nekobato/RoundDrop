@@ -63,6 +63,16 @@ export const store = new Store<Config>({
           bundleId: {
             type: "string",
             nullable: true
+          },
+          iconVersion: {
+            type: "number",
+            nullable: true
+          },
+          children: {
+            type: "array",
+            items: {
+              type: "object"
+            }
           }
         },
         required: ["id", "type", "name", "command"]

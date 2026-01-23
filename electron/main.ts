@@ -29,6 +29,7 @@ import {
   deleteImage,
   getImagePath,
   imageDirPath,
+  saveCustomIconImage,
   saveIconImage
 } from "./utils/image";
 import {
@@ -361,6 +362,30 @@ app
           command: ""
         }
       ]);
+    });
+
+    ipcMain.handle("set:groupIcon", async (_, { id }) => {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        properties: ["openFile"],
+        filters: [
+          {
+            name: "Images",
+            extensions: ["png", "jpg", "jpeg", "svg"]
+          }
+        ]
+      });
+
+      if (canceled || !filePaths?.length) {
+        return { canceled: true };
+      }
+
+      try {
+        await saveCustomIconImage(id, filePaths[0]);
+        return { updatedAt: Date.now() };
+      } catch (error) {
+        console.error("[image] Failed to save group icon", error);
+        return { error: "アイコン画像の保存に失敗しました" };
+      }
     });
 
     ipcMain.handle("remove:commandImage", (_, id) => {
