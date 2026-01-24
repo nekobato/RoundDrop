@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps({
   image: {
@@ -19,10 +20,29 @@ const props = defineProps({
     default: false
   }
 });
+
+const imageError = ref(false);
+const showImage = computed(() => Boolean(props.image) && !imageError.value);
+
+watch(
+  () => props.image,
+  () => {
+    imageError.value = false;
+  }
+);
+
+const onImageError = () => {
+  imageError.value = true;
+};
 </script>
 <template>
   <div class="image-container" :class="[`size-${props.iconSize}`]">
-    <img v-if="props.type === 'command'" class="icon" :src="props.image" />
+    <img
+      v-if="showImage"
+      class="icon"
+      :src="props.image"
+      @error="onImageError"
+    />
     <Icon v-else class="icon" icon="mingcute:folder-fill" />
     <span
       v-if="props.isRunning && props.type === 'command'"

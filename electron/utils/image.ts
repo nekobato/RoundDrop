@@ -44,6 +44,33 @@ export const saveIconImage = async (id: string, appPath: string) => {
   return filePath;
 };
 
+/**
+ * Save a custom icon image as a 128x128 PNG.
+ */
+export const saveCustomIconImage = async (
+  id: string,
+  sourcePath: string
+) => {
+  const extension = path.extname(sourcePath).toLowerCase();
+  const image =
+    extension === ".svg"
+      ? nativeImage.createFromDataURL(
+          `data:image/svg+xml;base64,${fs
+            .readFileSync(sourcePath)
+            .toString("base64")}`
+        )
+      : nativeImage.createFromPath(sourcePath);
+  const { width, height } = image.getSize();
+  if (width === 0 || height === 0) {
+    throw new Error("invalid image");
+  }
+  const resized = image.resize({ width: 128, height: 128 });
+  const buffer = resized.toPNG();
+  const filePath = getImagePath(`${id}.png`);
+  fs.writeFileSync(filePath, buffer);
+  return filePath;
+};
+
 export const deleteImage = (id: string) => {
   if (fs.existsSync(getImagePath(`${id}.png`))) {
     fs.rmSync(getImagePath(`${id}.png`));

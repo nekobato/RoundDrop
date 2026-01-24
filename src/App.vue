@@ -4,12 +4,14 @@ import Ring from "@/components/Ring.vue";
 import Config from "./components/Config/index.vue";
 import { defaultConfig } from "./utils";
 
+const isConfigWindow =
+  new URLSearchParams(window.location.search).get("window") === "config";
+
 const config = ref(defaultConfig);
 const runningApps = ref<Record<string, boolean>>({});
 provide("config", config);
 provide("runningApps", runningApps);
 const showCommand = ref(false);
-const showConfig = ref(false);
 
 const applyRunningApps = (payload?: Record<string, boolean>) => {
   runningApps.value = payload ?? {};
@@ -19,58 +21,49 @@ const onChangeConfig = async () => {
   config.value = await window.ipc.invoke("get:config");
 };
 
-const closeConfig = () => {
-  window.ipc.send("config:close");
-  showConfig.value = false;
-};
+if (!isConfigWindow) {
+  window.ipc.on("ring:open", () => {
+    showCommand.value = true;
+  });
 
-window.ipc.on("ring:open", () => {
-  showCommand.value = true;
-});
+  window.ipc.on("ring:close", () => {
+    showCommand.value = false;
+  });
 
-window.ipc.on("ring:close", () => {
-  showCommand.value = false;
-});
+  window.ipc.on("running-apps:update", (_, payload: Record<string, boolean>) => {
+    applyRunningApps(payload);
+  });
+}
 
-window.ipc.on("ring:config", () => {
-  showCommand.value = false;
-  showConfig.value = true;
-});
-
-window.ipc.on("running-apps:update", (_, payload: Record<string, boolean>) => {
-  applyRunningApps(payload);
+window.ipc.on("config:updated", () => {
+  onChangeConfig();
 });
 
 onMounted(async () => {
   window.postMessage("removeLoading");
 
-  config.value = await window.ipc.invoke("get:config");
-  if (config.value.commands.length === 0) {
+  await onChangeConfig();
+  if (!isConfigWindow && config.value.commands.length === 0) {
     window.ipc.send("config:open");
-    showConfig.value = true;
   }
 
-  const initialRunningApps = await window.ipc.invoke("get:running-apps");
-  applyRunningApps(initialRunningApps);
+  if (!isConfigWindow) {
+    const initialRunningApps = await window.ipc.invoke("get:running-apps");
+    applyRunningApps(initialRunningApps);
+  }
 
   window.removeLoading();
 });
 </script>
 
 <template>
-  <div class="scrim" v-if="showCommand" />
+  <div class="scrim" v-if="!isConfigWindow && showCommand" />
   <Ring
     class="ring-command"
     :visible="showCommand"
-    :no-transition="showConfig"
-    v-if="config.commands.length > 0"
+    v-if="!isConfigWindow && config.commands.length > 0"
   />
-  <Config
-    class="config"
-    v-if="showConfig"
-    @change="onChangeConfig"
-    @close="closeConfig"
-  />
+  <Config class="config" v-if="isConfigWindow" @change="onChangeConfig" />
 </template>
 
 <style scoped>
