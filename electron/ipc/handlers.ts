@@ -93,9 +93,8 @@ export const registerIpcHandlers = ({
   });
 
   ipcMain.handle(IPC_CHANNELS.setShortcuts, (_, payload: ShortcutPayload) => {
-    const result = setShortcut(payload);
+    setShortcut(payload);
     notifyConfigUpdated();
-    return result;
   });
 
   ipcMain.handle(IPC_CHANNELS.setIconSize, (_, payload: number) => {
