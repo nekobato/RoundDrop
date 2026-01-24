@@ -161,7 +161,7 @@ export const createWindowController = ({
       fullscreenable: false,
       webPreferences: {
         preload: statics.preload,
-        devTools: statics.VITE_DEV_SERVER_URL ? true : false
+        devTools: Boolean(statics.VITE_DEV_SERVER_URL)
       }
     });
 
