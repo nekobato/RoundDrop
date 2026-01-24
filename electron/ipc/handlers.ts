@@ -113,9 +113,8 @@ export const registerIpcHandlers = ({
     IPC_CHANNELS.setCommands,
     async (_, payload: AppCommand[]) => {
       const { commands } = await ensureBundleIdsInCommands(payload);
-      const result = setCommands(commands);
+      setCommands(commands);
       notifyConfigUpdated();
-      return result;
     }
   );
 
