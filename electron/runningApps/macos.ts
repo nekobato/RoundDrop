@@ -1,3 +1,6 @@
+/**
+ * macOS-specific running applications watcher.
+ */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { AppCommand } from "../../src/types/app";
@@ -9,6 +12,9 @@ const POLL_INTERVAL = 2000;
 
 export type RunningAppsState = Record<string, boolean>;
 
+/**
+ * Flatten nested command trees into a single list.
+ */
 const collectCommands = (
   commands: AppCommand[],
   collection: AppCommand[] = []
@@ -22,6 +28,9 @@ const collectCommands = (
   return collection;
 };
 
+/**
+ * Parse bundle identifiers from lsappinfo output.
+ */
 const parseBundleIds = (stdout: string): Set<string> => {
   const bundleIds = new Set<string>();
   const regex =
@@ -33,6 +42,9 @@ const parseBundleIds = (stdout: string): Set<string> => {
   return bundleIds;
 };
 
+/**
+ * Build a running-state map keyed by command id.
+ */
 const createState = (
   commands: AppCommand[],
   runningBundleIds: Set<string>
@@ -48,6 +60,9 @@ const createState = (
   return state;
 };
 
+/**
+ * Create a watcher that polls running applications on macOS.
+ */
 export const createRunningAppsWatcher = ({
   getCommands,
   onUpdate,
@@ -61,6 +76,9 @@ export const createRunningAppsWatcher = ({
   let stopped = false;
   let lastPayload = "";
 
+  /**
+   * Schedule the next poll.
+   */
   const schedule = () => {
     if (stopped) {
       return;
@@ -68,6 +86,9 @@ export const createRunningAppsWatcher = ({
     timer = setTimeout(poll, intervalMs);
   };
 
+  /**
+   * Poll the running apps list and emit changes.
+   */
   const poll = async () => {
     if (stopped) {
       return;
@@ -89,6 +110,9 @@ export const createRunningAppsWatcher = ({
     }
   };
 
+  /**
+   * Start polling if not already active.
+   */
   const start = () => {
     if (process.platform !== "darwin" || stopped) {
       return;
@@ -98,6 +122,9 @@ export const createRunningAppsWatcher = ({
     }
   };
 
+  /**
+   * Stop polling and clear timers.
+   */
   const stop = () => {
     stopped = true;
     if (timer) {
