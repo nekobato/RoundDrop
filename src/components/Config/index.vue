@@ -51,13 +51,34 @@ const focusShortcutInput = () => {
   shortcutInput.value?.focus();
 };
 
+const isFileDrag = (e: DragEvent | Event) => {
+  const types = (e as DragEvent).dataTransfer?.types;
+  if (!types) {
+    return false;
+  }
+  return Array.from(types).includes("Files");
+};
+
+const onDragOver = (e: DragEvent) => {
+  if (!isFileDrag(e)) {
+    return;
+  }
+  e.preventDefault();
+};
+
 const onDragEnter = (e: DragEvent) => {
+  if (!isFileDrag(e)) {
+    return;
+  }
   e.preventDefault();
   dragDepth.value += 1;
   drag.value = true;
 };
 
 const onDragLeave = (e: DragEvent) => {
+  if (!isFileDrag(e)) {
+    return;
+  }
   e.preventDefault();
   dragDepth.value = Math.max(dragDepth.value - 1, 0);
   if (dragDepth.value === 0) {
@@ -71,6 +92,10 @@ const resetDragState = () => {
 };
 
 const onDrop = async (e: DragEvent | Event) => {
+  if (!isFileDrag(e)) {
+    return;
+  }
+  e.preventDefault();
   const file = (e as DragEvent).dataTransfer?.files[0];
   if (file?.name && file.name.split(".").pop() === "app") {
     const result = await window.ipc.invoke("add:appCommand", {
@@ -85,9 +110,9 @@ const onDrop = async (e: DragEvent | Event) => {
     resetDragState();
     emit("change");
   } else {
-    ElMessage.error("*.app ファイルのみ 追加できます");
-    resetDragState();
-  }
+      ElMessage.error("*.app ファイルのみ 追加できます");
+      resetDragState();
+    }
 };
 
 const addDirectory = async () => {
@@ -122,10 +147,10 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
   <div class="config">
     <div
       class="config-contents"
-      @dragover.prevent
-      @dragenter.prevent="onDragEnter"
-      @dragleave.prevent="onDragLeave"
-      @drop.prevent="onDrop"
+      @dragover="onDragOver"
+      @dragenter="onDragEnter"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
     >
       <div class="options">
         <div class="input-field">
