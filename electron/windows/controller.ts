@@ -103,7 +103,7 @@ export const createWindowController = ({
       icon: path.join(statics.publicRoot, "icon.png"),
       webPreferences: {
         preload: statics.preload,
-        devTools: statics.VITE_DEV_SERVER_URL ? true : false
+        devTools: Boolean(statics.VITE_DEV_SERVER_URL)
       },
       alwaysOnTop: true,
       frame: false,
