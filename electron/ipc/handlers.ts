@@ -99,11 +99,9 @@ export const registerIpcHandlers = ({
   });
 
   ipcMain.handle(IPC_CHANNELS.setIconSize, (_, payload: number) => {
-    const result = setIconSize(payload);
+    setIconSize(payload);
     notifyConfigUpdated();
-    return result;
   });
-
   ipcMain.handle(IPC_CHANNELS.getCommands, () => {
     return getCommands();
   });
