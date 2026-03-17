@@ -14,7 +14,7 @@ import {
 import { createWindowController } from "./windows/controller";
 import { getCommands, getConfig, getShortcuts, setCommands } from "./store";
 import { ensureBundleIdsInCommands } from "./utils/appMetadata";
-import { checkUpdate } from "./utils/autoupdate";
+import { createAutoUpdateManager } from "./utils/autoupdate";
 import { initSentry } from "./utils/sentry";
 import {
   createRunningAppsWatcher,
@@ -53,6 +53,8 @@ const runningAppsWatcher = createRunningAppsWatcher({
       ?.webContents.send(IPC_CHANNELS.runningAppsUpdate, state);
   }
 });
+
+const autoUpdateManager = createAutoUpdateManager();
 
 /**
  * Notify renderer windows that config values have changed.
@@ -100,6 +102,7 @@ const handleActivate = () => {
 const handleWillQuit = () => {
   unregisterAllShortcuts();
   runningAppsWatcher.stop();
+  autoUpdateManager.stop();
 };
 
 /**
@@ -138,6 +141,7 @@ const initializeApp = async () => {
   });
 
   registerImageProtocol();
+  autoUpdateManager.start();
 };
 
 registerImageScheme();
@@ -145,7 +149,5 @@ registerImageScheme();
 app.on("window-all-closed", handleAllWindowsClosed);
 app.on("activate", handleActivate);
 app.on("will-quit", handleWillQuit);
-
-checkUpdate();
 
 app.whenReady().then(initializeApp);

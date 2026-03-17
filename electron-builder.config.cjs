@@ -6,20 +6,11 @@ const pkg = require("./package.json");
 const config = {
   appId: "net.nekobato.RoundDrop",
   asar: true,
-  asarUnpack: ["dist-electron/file-icon"],
   productName: "RoundDrop",
   directories: {
     output: `release/${pkg.version}`
   },
-  files: [
-    "dist",
-    "!dist/assets/*.map",
-    "dist-electron",
-    {
-      from: "node_modules/file-icon/file-icon",
-      to: "dist-electron/file-icon"
-    }
-  ],
+  files: ["dist", "!dist/assets/*.map", "dist-electron"],
   mac: {
     target: ["default"],
     icon: "dist/icons/mac/icon.icns",

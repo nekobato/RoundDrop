@@ -1,3 +1,6 @@
+packages:
+  - '.'
+
 ignoredBuiltDependencies:
   - '@parcel/watcher'
   - phantomjs-prebuilt
