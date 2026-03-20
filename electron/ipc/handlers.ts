@@ -17,6 +17,7 @@ import {
   saveCustomIconImage,
   saveIconImage
 } from "../utils/image";
+import { getMainLogPath, logError } from "../utils/logger";
 import {
   ensureBundleIdsInCommands,
   getBundleIdFromApp
@@ -46,6 +47,7 @@ type SetGroupIconPayload = {
 type AddCommandResult = {
   warning?: string;
   error?: string;
+  logPath?: string;
 };
 
 type IpcDependencies = {
@@ -128,15 +130,12 @@ export const registerIpcHandlers = ({
     async (_, file: AddAppCommandPayload) => {
       const id = nanoid();
       let warning: string | undefined;
+      const logPath = getMainLogPath();
 
       try {
         await saveIconImage(id, file.path);
-      } catch (error) {
-        warning = "アプリアイコンの取得に失敗しました";
-        console.error("[addAppCommand] Failed to save app icon", {
-          appPath: file.path,
-          error
-        });
+      } catch {
+        warning = "アプリアイコンの取得に失敗したため、代替アイコンで追加しました";
       }
 
       try {
@@ -154,14 +153,16 @@ export const registerIpcHandlers = ({
         ]);
         notifyConfigUpdated();
 
-        return warning ? ({ warning } satisfies AddCommandResult) : undefined;
+        return warning
+          ? ({ warning, logPath } satisfies AddCommandResult)
+          : undefined;
       } catch (error) {
-        console.error("[addAppCommand] Failed to add application command", {
-          appPath: file.path,
-          error
+        logError("addAppCommand", "Failed to add application command", error, {
+          appPath: file.path
         });
         return {
-          error: "アプリの追加に失敗しました"
+          error: "アプリの追加に失敗しました",
+          logPath
         } satisfies AddCommandResult;
       }
     }
@@ -181,16 +182,13 @@ export const registerIpcHandlers = ({
     const name = path.basename(filePath);
     const id = nanoid();
     let warning: string | undefined;
+    const logPath = getMainLogPath();
 
     try {
       await saveIconImage(id, filePath);
-    } catch (error) {
+    } catch {
       warning =
         "アプリアイコンの取得に失敗したため、代替アイコンで追加しました";
-      console.error("[addApplication] Failed to save app icon", {
-        appPath: filePath,
-        error
-      });
     }
 
     try {
@@ -208,14 +206,16 @@ export const registerIpcHandlers = ({
       ]);
       notifyConfigUpdated();
 
-      return warning ? ({ warning } satisfies AddCommandResult) : undefined;
+      return warning
+        ? ({ warning, logPath } satisfies AddCommandResult)
+        : undefined;
     } catch (error) {
-      console.error("[addApplication] Failed to add application", {
-        appPath: filePath,
-        error
+      logError("addApplication", "Failed to add application", error, {
+        appPath: filePath
       });
       return {
-        error: "アプリの追加に失敗しました"
+        error: "アプリの追加に失敗しました",
+        logPath
       } satisfies AddCommandResult;
     }
   });
@@ -257,7 +257,10 @@ export const registerIpcHandlers = ({
         await saveCustomIconImage(id, filePaths[0]);
         return { updatedAt: Date.now() };
       } catch (error) {
-        console.error("[image] Failed to save group icon", error);
+        logError("image", "Failed to save group icon", error, {
+          imagePath: filePaths[0],
+          id
+        });
         return { error: "アイコン画像の保存に失敗しました" };
       }
     }

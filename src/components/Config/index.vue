@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { Ref, computed, inject, ref } from "vue";
 import { AppCommand, Config } from "@/types/app";
-import { defaultConfig, deepToRaw, keyboardEventToElectronAccelerator } from "@/utils";
+import {
+  defaultConfig,
+  deepToRaw,
+  keyboardEventToElectronAccelerator
+} from "@/utils";
 import CommandTree from "./CommandTree.vue";
 import { Icon } from "@iconify/vue";
 import { ElMessage } from "element-plus";
@@ -105,12 +109,18 @@ const onDrop = async (e: DragEvent | Event) => {
       });
 
       if (result?.error) {
-        ElMessage.error(result.error);
+        const message = result.logPath
+          ? `${result.error}\n${result.logPath}`
+          : result.error;
+        ElMessage.error(message);
         return;
       }
 
       if (result?.warning) {
-        ElMessage.warning(result.warning);
+        const message = result.logPath
+          ? `${result.warning}\n${result.logPath}`
+          : result.warning;
+        ElMessage.warning(message);
       }
 
       emit("change");
@@ -121,9 +131,9 @@ const onDrop = async (e: DragEvent | Event) => {
       resetDragState();
     }
   } else {
-      ElMessage.error("*.app ファイルのみ 追加できます");
-      resetDragState();
-    }
+    ElMessage.error("*.app ファイルのみ 追加できます");
+    resetDragState();
+  }
 };
 
 const addDirectory = async () => {
@@ -142,12 +152,18 @@ const addApplication = async () => {
     const result = await window.ipc.invoke("add:application");
 
     if (result?.error) {
-      ElMessage.error(result.error);
+      const message = result.logPath
+        ? `${result.error}\n${result.logPath}`
+        : result.error;
+      ElMessage.error(message);
       return;
     }
 
     if (result?.warning) {
-      ElMessage.warning(result.warning);
+      const message = result.logPath
+        ? `${result.warning}\n${result.logPath}`
+        : result.warning;
+      ElMessage.warning(message);
     }
 
     emit("change");

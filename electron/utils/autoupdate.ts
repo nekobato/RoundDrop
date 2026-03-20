@@ -1,11 +1,11 @@
 import { app, dialog } from "electron";
-import log from "electron-log";
 import {
   autoUpdater,
   type ProgressInfo,
   type UpdateDownloadedEvent,
   type UpdateInfo
 } from "electron-updater";
+import { formatError, getLogger } from "./logger";
 
 const INITIAL_UPDATE_CHECK_DELAY_MS = 3_000;
 const PERIODIC_UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1_000;
@@ -16,18 +16,7 @@ type AutoUpdateManager = {
   checkForUpdates: () => Promise<void>;
 };
 
-const formatError = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.stack ?? error.message;
-  }
-  return String(error);
-};
-
-const configureLogger = () => {
-  log.transports.file.level = "info";
-  log.transports.console.level = app.isPackaged ? false : "debug";
-  autoUpdater.logger = log;
-};
+const log = getLogger();
 
 const logUpdateEvent = (message: string, payload?: unknown) => {
   if (payload === undefined) {
@@ -39,7 +28,7 @@ const logUpdateEvent = (message: string, payload?: unknown) => {
 };
 
 export const createAutoUpdateManager = (): AutoUpdateManager => {
-  configureLogger();
+  autoUpdater.logger = log;
 
   let hasStarted = false;
   let initialCheckTimer: NodeJS.Timeout | null = null;
