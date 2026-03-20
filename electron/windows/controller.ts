@@ -9,6 +9,7 @@ import type { Config } from "../../src/types/app";
 
 type WindowControllerDeps = {
   getConfig: () => Config;
+  isQuitting: () => boolean;
   registerGlobalShortcut: () => void;
   unregisterAllShortcuts: () => void;
 };
@@ -32,6 +33,7 @@ export type WindowController = {
  */
 export const createWindowController = ({
   getConfig,
+  isQuitting,
   registerGlobalShortcut,
   unregisterAllShortcuts
 }: WindowControllerDeps): WindowController => {
@@ -51,14 +53,27 @@ export const createWindowController = ({
   const getConfigWindow = () => configWindow;
 
   /**
+   * Check whether a BrowserWindow instance is still usable.
+   */
+  const isWindowAlive = (
+    window: BrowserWindow | null
+  ): window is BrowserWindow => {
+    return window !== null && !window.isDestroyed();
+  };
+
+  /**
    * Set the launcher window bounds to the current display's work area.
    */
   const setLauncherWindowPosition = () => {
+    if (!isWindowAlive(launcherWindow)) {
+      return;
+    }
+
     const { x, y } = screen.getCursorScreenPoint();
     const display = screen.getDisplayNearestPoint({ x, y });
     const { workArea } = display;
 
-    launcherWindow?.setBounds({
+    launcherWindow.setBounds({
       x: workArea.x,
       y: workArea.y,
       width: workArea.width,
@@ -96,6 +111,28 @@ export const createWindowController = ({
   };
 
   /**
+   * Restore the launcher window after closing the config window.
+   */
+  const restoreLauncherWindow = () => {
+    resetRingState();
+
+    if (!isWindowAlive(launcherWindow)) {
+      return;
+    }
+
+    setLauncherWindowPosition();
+    launcherWindow.setIgnoreMouseEvents(true);
+    launcherWindow.setVisibleOnAllWorkspaces(true);
+    launcherWindow.setAlwaysOnTop(true);
+    launcherWindow.blur();
+
+    const config = getConfig();
+    if (config.commands.length !== 0) {
+      registerGlobalShortcut();
+    }
+  };
+
+  /**
    * Create the launcher window.
    */
   const createLauncherWindow = () => {
@@ -117,6 +154,9 @@ export const createWindowController = ({
 
     setLauncherWindowPosition();
     launcherWindow.setVisibleOnAllWorkspaces(true);
+    launcherWindow.on("closed", () => {
+      launcherWindow = null;
+    });
 
     launcherWindow.webContents.on("did-finish-load", () => {
       launcherWindow?.webContents.send(
@@ -146,10 +186,12 @@ export const createWindowController = ({
 
     resetRingState();
     requestRingClose();
-    launcherWindow?.hide();
-    launcherWindow?.setIgnoreMouseEvents(true);
-    launcherWindow?.setVisibleOnAllWorkspaces(true);
-    launcherWindow?.setAlwaysOnTop(true);
+    if (isWindowAlive(launcherWindow)) {
+      launcherWindow.hide();
+      launcherWindow.setIgnoreMouseEvents(true);
+      launcherWindow.setVisibleOnAllWorkspaces(true);
+      launcherWindow.setAlwaysOnTop(true);
+    }
     unregisterAllShortcuts();
 
     configWindow = new BrowserWindow({
@@ -166,8 +208,13 @@ export const createWindowController = ({
     });
 
     configWindow.on("closed", () => {
+      const shouldRestoreLauncher = !isQuitting();
       configWindow = null;
-      closeConfigWindow();
+      if (shouldRestoreLauncher) {
+        restoreLauncherWindow();
+      } else {
+        resetRingState();
+      }
     });
 
     loadRenderer(configWindow, "config");
@@ -182,29 +229,26 @@ export const createWindowController = ({
    * Close the config window and restore launcher state.
    */
   const closeConfigWindow = () => {
-    if (configWindow && !configWindow.isDestroyed()) {
+    if (isWindowAlive(configWindow)) {
       configWindow.close();
       return;
     }
 
-    resetRingState();
-    setLauncherWindowPosition();
-    launcherWindow?.setIgnoreMouseEvents(true);
-    launcherWindow?.setVisibleOnAllWorkspaces(true);
-    launcherWindow?.setAlwaysOnTop(true);
-    launcherWindow?.blur();
-
-    const config = getConfig();
-    if (config.commands.length !== 0) {
-      registerGlobalShortcut();
+    if (isQuitting()) {
+      resetRingState();
+      return;
     }
+
+    restoreLauncherWindow();
   };
 
   /**
    * Send a ring close request to the renderer.
    */
   const requestRingClose = () => {
-    launcherWindow?.webContents.send(IPC_CHANNELS.ringClose);
+    if (isWindowAlive(launcherWindow)) {
+      launcherWindow.webContents.send(IPC_CHANNELS.ringClose);
+    }
     isRingVisible = false;
   };
 
@@ -225,17 +269,24 @@ export const createWindowController = ({
     }
 
     setLauncherWindowPosition();
-    launcherWindow?.webContents.send(IPC_CHANNELS.ringOpen);
+    if (!isWindowAlive(launcherWindow)) {
+      isRingAnimating = false;
+      return;
+    }
+
+    launcherWindow.webContents.send(IPC_CHANNELS.ringOpen);
     isRingVisible = true;
-    launcherWindow?.show();
+    launcherWindow.show();
   };
 
   /**
    * Apply window changes when the ring has fully opened.
    */
   const handleRingOpened = () => {
-    launcherWindow?.setIgnoreMouseEvents(false);
-    launcherWindow?.focus();
+    if (isWindowAlive(launcherWindow)) {
+      launcherWindow.setIgnoreMouseEvents(false);
+      launcherWindow.focus();
+    }
     isRingAnimating = false;
   };
 
@@ -243,9 +294,11 @@ export const createWindowController = ({
    * Apply window changes when the ring has fully closed.
    */
   const handleRingClosed = () => {
-    launcherWindow?.setIgnoreMouseEvents(true);
-    launcherWindow?.blur();
-    launcherWindow?.hide();
+    if (isWindowAlive(launcherWindow)) {
+      launcherWindow.setIgnoreMouseEvents(true);
+      launcherWindow.blur();
+      launcherWindow.hide();
+    }
     isRingAnimating = false;
   };
 

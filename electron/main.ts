@@ -29,6 +29,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let runningAppsState: RunningAppsState = {};
+let isQuitting = false;
 
 /**
  * Register the global shortcut for toggling the ring.
@@ -40,6 +41,7 @@ const registerGlobalShortcut = () => {
 
 const windowController = createWindowController({
   getConfig,
+  isQuitting: () => isQuitting,
   registerGlobalShortcut,
   unregisterAllShortcuts
 });
@@ -97,6 +99,13 @@ const handleActivate = () => {
 };
 
 /**
+ * Handle the "before-quit" app event.
+ */
+const handleBeforeQuit = () => {
+  isQuitting = true;
+};
+
+/**
  * Handle the "will-quit" app event.
  */
 const handleWillQuit = () => {
@@ -148,6 +157,7 @@ registerImageScheme();
 
 app.on("window-all-closed", handleAllWindowsClosed);
 app.on("activate", handleActivate);
+app.on("before-quit", handleBeforeQuit);
 app.on("will-quit", handleWillQuit);
 
 app.whenReady().then(initializeApp);
