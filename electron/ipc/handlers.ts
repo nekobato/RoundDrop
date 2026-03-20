@@ -17,7 +17,10 @@ import {
   saveCustomIconImage,
   saveIconImage
 } from "../utils/image";
-import { ensureBundleIdsInCommands, getBundleIdFromApp } from "../utils/appMetadata";
+import {
+  ensureBundleIdsInCommands,
+  getBundleIdFromApp
+} from "../utils/appMetadata";
 import { IPC_CHANNELS } from "./channels";
 import type { RunningAppsState } from "../runningApps";
 import type { AppCommand, Config } from "../../src/types/app";
@@ -38,6 +41,11 @@ type AddDirectoryPayload = {
 
 type SetGroupIconPayload = {
   id: string;
+};
+
+type AddCommandResult = {
+  warning?: string;
+  error?: string;
 };
 
 type IpcDependencies = {
@@ -109,33 +117,53 @@ export const registerIpcHandlers = ({
     return getRunningAppsState();
   });
 
-  ipcMain.handle(
-    IPC_CHANNELS.setCommands,
-    async (_, payload: AppCommand[]) => {
-      const { commands } = await ensureBundleIdsInCommands(payload);
-      setCommands(commands);
-      notifyConfigUpdated();
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.setCommands, async (_, payload: AppCommand[]) => {
+    const { commands } = await ensureBundleIdsInCommands(payload);
+    setCommands(commands);
+    notifyConfigUpdated();
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.addAppCommand,
     async (_, file: AddAppCommandPayload) => {
       const id = nanoid();
-      await saveIconImage(id, file.path);
-      const bundleId = await getBundleIdFromApp(file.path);
+      let warning: string | undefined;
 
-      setCommands([
-        ...getCommands(),
-        {
-          id,
-          type: "command",
-          name: file.name.replace(".app", ""),
-          command: file.path,
-          bundleId
-        }
-      ]);
-      notifyConfigUpdated();
+      try {
+        await saveIconImage(id, file.path);
+      } catch (error) {
+        warning = "アプリアイコンの取得に失敗しました";
+        console.error("[addAppCommand] Failed to save app icon", {
+          appPath: file.path,
+          error
+        });
+      }
+
+      try {
+        const bundleId = await getBundleIdFromApp(file.path);
+
+        setCommands([
+          ...getCommands(),
+          {
+            id,
+            type: "command",
+            name: file.name.replace(".app", ""),
+            command: file.path,
+            bundleId
+          }
+        ]);
+        notifyConfigUpdated();
+
+        return warning ? ({ warning } satisfies AddCommandResult) : undefined;
+      } catch (error) {
+        console.error("[addAppCommand] Failed to add application command", {
+          appPath: file.path,
+          error
+        });
+        return {
+          error: "アプリの追加に失敗しました"
+        } satisfies AddCommandResult;
+      }
     }
   );
 
@@ -152,20 +180,44 @@ export const registerIpcHandlers = ({
     const filePath = filePaths[0];
     const name = path.basename(filePath);
     const id = nanoid();
-    await saveIconImage(id, filePath);
-    const bundleId = await getBundleIdFromApp(filePath);
+    let warning: string | undefined;
 
-    setCommands([
-      ...getCommands(),
-      {
-        id,
-        type: "command",
-        name: name.replace(".app", ""),
-        command: filePath,
-        bundleId
-      }
-    ]);
-    notifyConfigUpdated();
+    try {
+      await saveIconImage(id, filePath);
+    } catch (error) {
+      warning =
+        "アプリアイコンの取得に失敗したため、代替アイコンで追加しました";
+      console.error("[addApplication] Failed to save app icon", {
+        appPath: filePath,
+        error
+      });
+    }
+
+    try {
+      const bundleId = await getBundleIdFromApp(filePath);
+
+      setCommands([
+        ...getCommands(),
+        {
+          id,
+          type: "command",
+          name: name.replace(".app", ""),
+          command: filePath,
+          bundleId
+        }
+      ]);
+      notifyConfigUpdated();
+
+      return warning ? ({ warning } satisfies AddCommandResult) : undefined;
+    } catch (error) {
+      console.error("[addApplication] Failed to add application", {
+        appPath: filePath,
+        error
+      });
+      return {
+        error: "アプリの追加に失敗しました"
+      } satisfies AddCommandResult;
+    }
   });
 
   ipcMain.handle(

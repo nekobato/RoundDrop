@@ -98,17 +98,28 @@ const onDrop = async (e: DragEvent | Event) => {
   e.preventDefault();
   const file = (e as DragEvent).dataTransfer?.files[0];
   if (file?.name && file.name.split(".").pop() === "app") {
-    const result = await window.ipc.invoke("add:appCommand", {
-      path: window.getFilePath(file),
-      name: file.name
-    });
+    try {
+      const result = await window.ipc.invoke("add:appCommand", {
+        path: window.getFilePath(file),
+        name: file.name
+      });
 
-    if (result?.error) {
-      ElMessage.error(result.error);
+      if (result?.error) {
+        ElMessage.error(result.error);
+        return;
+      }
+
+      if (result?.warning) {
+        ElMessage.warning(result.warning);
+      }
+
+      emit("change");
+    } catch (error) {
+      console.error("[config] Failed to add dragged application", error);
+      ElMessage.error("アプリの追加に失敗しました");
+    } finally {
+      resetDragState();
     }
-
-    resetDragState();
-    emit("change");
   } else {
       ElMessage.error("*.app ファイルのみ 追加できます");
       resetDragState();
@@ -127,12 +138,23 @@ const addDirectory = async () => {
 };
 
 const addApplication = async () => {
-  const result = await window.ipc.invoke("add:application");
+  try {
+    const result = await window.ipc.invoke("add:application");
 
-  if (result?.error) {
-    ElMessage.error(result.error);
+    if (result?.error) {
+      ElMessage.error(result.error);
+      return;
+    }
+
+    if (result?.warning) {
+      ElMessage.warning(result.warning);
+    }
+
+    emit("change");
+  } catch (error) {
+    console.error("[config] Failed to add application", error);
+    ElMessage.error("アプリの追加に失敗しました");
   }
-  emit("change");
 };
 
 const onChangeTreeItem = async (tree: AppCommand[]) => {

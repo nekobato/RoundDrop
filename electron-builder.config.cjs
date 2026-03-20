@@ -6,6 +6,7 @@ const pkg = require("./package.json");
 const config = {
   appId: "net.nekobato.RoundDrop",
   asar: true,
+  asarUnpack: ["node_modules/file-icon/**"],
   productName: "RoundDrop",
   directories: {
     output: `release/${pkg.version}`
