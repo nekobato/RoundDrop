@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { Ref, computed, inject, ref } from "vue";
-import { AppCommand, Config } from "@/types/app";
+import type {
+  AppCommand,
+  Config,
+  WindowSelectionToggleResult
+} from "@/types/app";
 import {
   defaultConfig,
   deepToRaw,
@@ -17,6 +21,7 @@ const emit = defineEmits(["change"]);
 const drag = ref(false);
 const dragDepth = ref(0);
 const shortcutInput = ref<HTMLInputElement>();
+const isWindowSelectionUpdating = ref(false);
 
 const iconSize = computed(() => {
   const sizes = ["24", "32", "48", "64"];
@@ -48,6 +53,38 @@ const onChangeIconSize = async (e: Event) => {
   if (config) {
     await window.ipc.invoke("set:iconSize", Number(size));
     emit("change");
+  }
+};
+
+const createWindowSelectionMessage = (result: WindowSelectionToggleResult) => {
+  if (!result.error) {
+    return undefined;
+  }
+  return result.logPath ? `${result.error}\n${result.logPath}` : result.error;
+};
+
+const onChangeWindowSelectionEnabled = async (e: Event) => {
+  if (!config || isWindowSelectionUpdating.value) {
+    return;
+  }
+
+  const enabled = (e.target as HTMLInputElement).checked;
+  isWindowSelectionUpdating.value = true;
+  try {
+    const result = (await window.ipc.invoke(
+      "set:windowSelectionEnabled",
+      enabled
+    )) as WindowSelectionToggleResult;
+    const errorMessage = createWindowSelectionMessage(result);
+    if (errorMessage) {
+      ElMessage.error(errorMessage);
+    }
+    emit("change");
+  } catch (error) {
+    console.error("[config] Failed to update window selection setting", error);
+    ElMessage.error("ウィンドウ選択機能の設定に失敗しました");
+  } finally {
+    isWindowSelectionUpdating.value = false;
   }
 };
 
@@ -215,6 +252,26 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
             @change="onChangeIconSize"
           />
         </div>
+        <div class="input-field switch-field">
+          <label for="window-selection-enabled">ウィンドウ選択機能</label>
+          <label
+            class="toggle-control"
+            :class="{ disabled: isWindowSelectionUpdating }"
+            for="window-selection-enabled"
+          >
+            <input
+              id="window-selection-enabled"
+              type="checkbox"
+              role="switch"
+              :checked="currentConfig.windowSelectionEnabled"
+              :disabled="isWindowSelectionUpdating"
+              @change="onChangeWindowSelectionEnabled"
+            />
+            <span class="toggle-track">
+              <span class="toggle-thumb" />
+            </span>
+          </label>
+        </div>
       </div>
       <div class="right-side">
         <div class="command-list-container">
@@ -294,7 +351,7 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
     color: var(--color-white-50);
     font-size: 12px;
   }
-  input {
+  input:not([type="checkbox"]) {
     width: 100%;
     height: 32px;
     font-size: 14px;
@@ -309,6 +366,61 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
       background-color: var(--color-white-t100);
     }
   }
+}
+.switch-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.toggle-control {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+
+  &.disabled {
+    cursor: progress;
+    opacity: 0.64;
+  }
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  input:focus-visible + .toggle-track {
+    outline: 2px solid var(--color-white-t700);
+    outline-offset: 2px;
+  }
+
+  input:checked + .toggle-track {
+    background-color: var(--color-teal-500);
+  }
+
+  input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(20px);
+  }
+}
+.toggle-track {
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  padding: 2px;
+  border-radius: 999px;
+  background-color: var(--color-grey-600);
+  transition: background-color 0.16s ease;
+}
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background-color: var(--color-white);
+  transition: transform 0.16s ease;
 }
 .actions {
   display: flex;

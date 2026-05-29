@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { CSSProperties, Ref, computed, inject, onMounted, ref, watch } from "vue";
+import { computed, inject, onMounted, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
-import { AppCommand, Config } from "../types/app";
+import WindowList from "./WindowList.vue";
+import type {
+  AppCommand,
+  Config,
+  RunningWindow,
+  RunningWindowsResult
+} from "../types/app";
 import { findNodeDepthById } from "./Config/treeUtil";
+import type { CSSProperties, Ref } from "vue";
 
 const props = defineProps({
   visible: {
@@ -51,6 +58,11 @@ const commandListElement = ref<HTMLElement | null>(null);
 const focusIndex = ref(0);
 const itemLength = computed(() => commands.value.length || 1);
 const pauseTransition = ref(false);
+const isWindowSelectionVisible = ref(false);
+const isWindowSelectionLoading = ref(false);
+const windowSelectionError = ref<string>();
+const windowSelectionFocusIndex = ref(0);
+const windowSelectionWindows = ref<RunningWindow[]>([]);
 
 const rotationPerItem = computed(() => 360 / itemLength.value);
 
@@ -85,11 +97,10 @@ const commandStyle = computed(() => {
   };
 });
 
-const iconName = computed(() => renderCommands.value[normalizedFocusIndex.value]?.name);
-
 const moveIntoGroup = (id: string) => {
   const group = commands.value.find((command) => command.id === id);
   if (group?.children) {
+    closeWindowSelection();
     commands.value = group.children;
     dirDepths.value.push(group.id);
     focusIndex.value = 0;
@@ -115,15 +126,98 @@ const renderCommands = computed<RenderCommand[]>(() => {
   });
 });
 
+const focusedItem = computed(() => {
+  return renderCommands.value[normalizedFocusIndex.value];
+});
+
+const focusedCommand = computed(() => {
+  const item = focusedItem.value;
+  return item?.type === "command" ? item : undefined;
+});
+
+const iconName = computed(() => focusedItem.value?.name);
+
+const canOpenWindowSelection = computed(() => {
+  const command = focusedCommand.value;
+  return Boolean(
+    config?.value.windowSelectionEnabled &&
+      command &&
+      isAppRunning(command.id)
+  );
+});
+
+const closeWindowSelection = () => {
+  isWindowSelectionVisible.value = false;
+  isWindowSelectionLoading.value = false;
+  windowSelectionError.value = undefined;
+  windowSelectionFocusIndex.value = 0;
+  windowSelectionWindows.value = [];
+};
+
+const applyRunningWindowsResult = (result: RunningWindowsResult) => {
+  windowSelectionWindows.value = result.windows;
+  windowSelectionError.value = result.error;
+  windowSelectionFocusIndex.value = 0;
+};
+
+const openWindowSelection = async () => {
+  if (!canOpenWindowSelection.value || isWindowSelectionLoading.value) {
+    return;
+  }
+
+  isWindowSelectionVisible.value = true;
+  isWindowSelectionLoading.value = true;
+  windowSelectionError.value = undefined;
+  windowSelectionWindows.value = [];
+
+  try {
+    const result = (await window.ipc.invoke(
+      "get:running-windows"
+    )) as RunningWindowsResult;
+    applyRunningWindowsResult(result);
+  } catch (error) {
+    console.error("[ring] Failed to get running windows", error);
+    windowSelectionError.value = "ウィンドウ一覧の取得に失敗しました";
+  } finally {
+    isWindowSelectionLoading.value = false;
+  }
+};
+
+const toggleWindowSelection = () => {
+  if (isWindowSelectionVisible.value) {
+    closeWindowSelection();
+    return;
+  }
+  void openWindowSelection();
+};
+
+const moveWindowSelectionFocus = (delta: number) => {
+  if (!isWindowSelectionVisible.value || windowSelectionWindows.value.length === 0) {
+    return;
+  }
+  windowSelectionFocusIndex.value += delta;
+};
+
 const onKeyDownRight = () => {
+  if (isWindowSelectionVisible.value) {
+    return;
+  }
   focusIndex.value += 1;
 };
 
 const onKeyDownLeft = () => {
+  if (isWindowSelectionVisible.value) {
+    return;
+  }
   focusIndex.value -= 1;
 };
 
 const onKeyDownUp = () => {
+  if (isWindowSelectionVisible.value) {
+    moveWindowSelectionFocus(-1);
+    return;
+  }
+
   if (dirDepths.value.length === 0 || !rootCommands.value) {
     return;
   }
@@ -140,8 +234,29 @@ const onKeyDownUp = () => {
   }
 };
 
+const onKeyDownDown = () => {
+  if (isWindowSelectionVisible.value) {
+    moveWindowSelectionFocus(1);
+  }
+};
+
+const onKeyDownZ = () => {
+  if (!isWindowSelectionVisible.value && !canOpenWindowSelection.value) {
+    return;
+  }
+  toggleWindowSelection();
+};
+
 const onKeyDownEnter = () => {
-  const item = renderCommands.value[normalizedFocusIndex.value];
+  if (isWindowSelectionVisible.value) {
+    const command = focusedCommand.value;
+    if (command && windowSelectionWindows.value.length > 0) {
+      window.ipc.send("open-path", command.command);
+    }
+    return;
+  }
+
+  const item = focusedItem.value;
 
   if (!item) {
     return;
@@ -172,6 +287,14 @@ const close = () => {
   window.ipc.send("ring:toggle");
 };
 
+const onKeyDownEsc = () => {
+  if (isWindowSelectionVisible.value) {
+    closeWindowSelection();
+    return;
+  }
+  close();
+};
+
 const onAfterEnter = () => {
   if (props.noTransition) {
     return;
@@ -187,6 +310,7 @@ const onAfterLeave = () => {
   dirDepths.value = [];
   commands.value = rootCommands.value || [];
   focusIndex.value = 0;
+  closeWindowSelection();
   window.ipc.send("ring:closed");
 };
 
@@ -197,8 +321,27 @@ watch(
     commands.value = newCommands || [];
     dirDepths.value = [];
     focusIndex.value = 0;
+    closeWindowSelection();
   },
   { immediate: true }
+);
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible) {
+      closeWindowSelection();
+    }
+  }
+);
+
+watch(
+  () => config?.value.windowSelectionEnabled,
+  (enabled) => {
+    if (!enabled) {
+      closeWindowSelection();
+    }
+  }
 );
 
 onMounted(() => {
@@ -219,20 +362,30 @@ onMounted(() => {
       class="ring-command-container"
       v-show="props.visible"
       :style="ringStyle"
+      @keydown.right="onKeyDownRight"
+      @keydown.left="onKeyDownLeft"
+      @keydown.up="onKeyDownUp"
+      @keydown.down="onKeyDownDown"
+      @keydown.z.prevent="onKeyDownZ"
+      @keydown.esc="onKeyDownEsc"
+      @keydown.enter="onKeyDownEnter"
+      ref="commandListElement"
+      tabindex="0"
     >
-      <div class="ring-command-list outer">
+      <WindowList
+        v-if="isWindowSelectionVisible"
+        :appName="focusedCommand?.name"
+        :error="windowSelectionError"
+        :focusIndex="windowSelectionFocusIndex"
+        :loading="isWindowSelectionLoading"
+        :windows="windowSelectionWindows"
+      />
+      <div class="ring-command-list outer" v-else>
         <ul
           class="ring-command-list inner"
           :class="{ pause: pauseTransition }"
-          @keydown.right="onKeyDownRight"
-          @keydown.left="onKeyDownLeft"
-          @keydown.up="onKeyDownUp"
-          @keydown.esc="close"
-          ref="commandListElement"
-          tabindex="0"
           :style="commandStyle"
           @transitionend.stop="onListTransitionEnd"
-          @keydown.enter="onKeyDownEnter"
         >
           <li
             v-for="item in renderCommands"
@@ -254,8 +407,16 @@ onMounted(() => {
           </li>
         </ul>
       </div>
-      <CommandCursor class="cursor" :class="`size-${config.iconSize}`" />
-      <span class="name" :class="`size-${config.iconSize}`">
+      <CommandCursor
+        class="cursor"
+        :class="`size-${config.iconSize}`"
+        v-if="!isWindowSelectionVisible"
+      />
+      <span
+        class="name"
+        :class="`size-${config.iconSize}`"
+        v-if="!isWindowSelectionVisible"
+      >
         {{ iconName }}
       </span>
     </div>
@@ -277,6 +438,7 @@ $icon-size-3: 64px;
   height: 320px;
   transition: transform $animation-duration $animation-function-enter;
   will-change: transform;
+  outline: none;
 }
 .ring-command-list {
   position: relative;

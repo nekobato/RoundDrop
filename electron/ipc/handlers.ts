@@ -10,7 +10,8 @@ import {
   getShortcuts,
   setCommands,
   setIconSize,
-  setShortcut
+  setShortcut,
+  setWindowSelectionEnabled
 } from "../store";
 import {
   deleteImage,
@@ -22,9 +23,20 @@ import {
   ensureBundleIdsInCommands,
   getBundleIdFromApp
 } from "../utils/appMetadata";
+import {
+  getWindowSelectionPermissionStatus,
+  getRunningWindows,
+  isBlockingPermissionStatus,
+  requestWindowSelectionPermission
+} from "../windowSelection";
 import { IPC_CHANNELS } from "./channels";
 import type { RunningAppsState } from "../runningApps";
-import type { AppCommand, Config } from "../../src/types/app";
+import type {
+  AppCommand,
+  Config,
+  RunningWindowsResult,
+  WindowSelectionToggleResult
+} from "../../src/types/app";
 
 type ShortcutPayload = {
   name: keyof Config["shortcuts"];
@@ -111,6 +123,54 @@ export const registerIpcHandlers = ({
     setIconSize(payload);
     notifyConfigUpdated();
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.setWindowSelectionEnabled,
+    async (_, enabled: boolean): Promise<WindowSelectionToggleResult> => {
+      if (!enabled) {
+        setWindowSelectionEnabled(false);
+        notifyConfigUpdated();
+        return {
+          enabled: false,
+          status: getWindowSelectionPermissionStatus()
+        };
+      }
+
+      const logPath = getMainLogPath();
+      try {
+        const status = await requestWindowSelectionPermission();
+        if (isBlockingPermissionStatus(status)) {
+          return {
+            enabled: false,
+            status,
+            error:
+              "ウィンドウ選択機能には画面収録の権限が必要です。macOS のシステム設定から許可してください",
+            logPath
+          };
+        }
+
+        setWindowSelectionEnabled(true);
+        notifyConfigUpdated();
+        return {
+          enabled: true,
+          status
+        };
+      } catch (error) {
+        logError(
+          "windowSelection",
+          "Failed to request window selection permission",
+          error
+        );
+        return {
+          enabled: false,
+          status: "unknown",
+          error: "ウィンドウ選択機能の有効化に失敗しました",
+          logPath
+        };
+      }
+    }
+  );
+
   ipcMain.handle(IPC_CHANNELS.getCommands, () => {
     return getCommands();
   });
@@ -118,6 +178,34 @@ export const registerIpcHandlers = ({
   ipcMain.handle(IPC_CHANNELS.getRunningApps, () => {
     return getRunningAppsState();
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.getRunningWindows,
+    async (): Promise<RunningWindowsResult> => {
+      const logPath = getMainLogPath();
+      try {
+        const result = await getRunningWindows();
+        if (isBlockingPermissionStatus(result.status)) {
+          return {
+            windows: [],
+            status: result.status,
+            error:
+              "ウィンドウ一覧を表示するには画面収録の権限が必要です。macOS のシステム設定から許可してください",
+            logPath
+          };
+        }
+        return result;
+      } catch (error) {
+        logError("windowSelection", "Failed to get running windows", error);
+        return {
+          windows: [],
+          status: "unknown",
+          error: "ウィンドウ一覧の取得に失敗しました",
+          logPath
+        };
+      }
+    }
+  );
 
   ipcMain.handle(IPC_CHANNELS.setCommands, async (_, payload: AppCommand[]) => {
     const { commands } = await ensureBundleIdsInCommands(payload);

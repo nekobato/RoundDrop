@@ -16,6 +16,7 @@ const DEFAULT_CONFIG: Config = {
     toggleCommand: "Control+Alt+Z"
   },
   iconSize: 3,
+  windowSelectionEnabled: false,
   commands: []
 };
 
@@ -32,6 +33,10 @@ const normalizeConfig = (config?: Partial<Config>): Config => {
       typeof config?.iconSize === "number"
         ? config.iconSize
         : DEFAULT_CONFIG.iconSize,
+    windowSelectionEnabled:
+      typeof config?.windowSelectionEnabled === "boolean"
+        ? config.windowSelectionEnabled
+        : DEFAULT_CONFIG.windowSelectionEnabled,
     commands: Array.isArray(config?.commands)
       ? config.commands
       : [...DEFAULT_CONFIG.commands]
@@ -57,6 +62,10 @@ export const store = new Store<Config>({
     iconSize: {
       type: "number",
       default: DEFAULT_CONFIG.iconSize
+    },
+    windowSelectionEnabled: {
+      type: "boolean",
+      default: DEFAULT_CONFIG.windowSelectionEnabled
     },
     commands: {
       type: "array",
@@ -132,6 +141,13 @@ export const setShortcut = ({ name, command }: ShortcutPayload) => {
  */
 export const setIconSize = (iconSize: number) => {
   store.set("iconSize", iconSize);
+};
+
+/**
+ * Update whether the window selection feature is enabled.
+ */
+export const setWindowSelectionEnabled = (enabled: boolean) => {
+  store.set("windowSelectionEnabled", enabled);
 };
 
 /**
