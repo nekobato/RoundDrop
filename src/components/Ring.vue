@@ -2,7 +2,6 @@
 import { computed, inject, onMounted, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
-import WindowList from "./WindowList.vue";
 import type {
   AppCommand,
   Config,
@@ -56,7 +55,6 @@ const dirDepths = ref<string[]>([]);
 
 const commandListElement = ref<HTMLElement | null>(null);
 const focusIndex = ref(0);
-const itemLength = computed(() => commands.value.length || 1);
 const pauseTransition = ref(false);
 const isWindowSelectionVisible = ref(false);
 const isWindowSelectionLoading = ref(false);
@@ -64,19 +62,72 @@ const windowSelectionError = ref<string>();
 const windowSelectionFocusIndex = ref(0);
 const windowSelectionWindows = ref<RunningWindow[]>([]);
 
-const rotationPerItem = computed(() => 360 / itemLength.value);
-
-const normalizedFocusIndex = computed(() => {
-  const len = itemLength.value;
+/**
+ * Normalize an arbitrary focus index for circular list navigation.
+ */
+const normalizeFocusIndex = (index: number, length: number) => {
+  const len = length || 1;
   if (!len) return 0;
-  const mod = focusIndex.value % len;
+  const mod = index % len;
   return mod >= 0 ? mod : len + mod;
-});
+};
 
 const iconSizePx = computed(() => {
   const sizeIndex = config?.value.iconSize ?? 2;
   return ICON_PIXEL_SIZES[sizeIndex] ?? ICON_PIXEL_SIZES[2];
 });
+
+type RingItem = {
+  id: string;
+  image?: string;
+  isRunning: boolean;
+  name: string;
+  type: AppCommand["type"];
+};
+
+const launcherRingItems = computed<RingItem[]>(() => {
+  return commands.value.map((item) => ({
+    id: item.id,
+    image: createIconSrc(item),
+    isRunning: item.type === "command" && isAppRunning(item.id),
+    name: item.name,
+    type: item.type
+  }));
+});
+
+const windowRingItems = computed<RingItem[]>(() => {
+  return windowSelectionWindows.value.map((window) => ({
+    id: window.id,
+    image: window.appIcon,
+    isRunning: false,
+    name: window.title,
+    type: "command"
+  }));
+});
+
+const activeRingItems = computed(() => {
+  return isWindowSelectionVisible.value
+    ? windowRingItems.value
+    : launcherRingItems.value;
+});
+
+const itemLength = computed(() => activeRingItems.value.length || 1);
+
+const activeFocusIndex = computed(() => {
+  return isWindowSelectionVisible.value
+    ? windowSelectionFocusIndex.value
+    : focusIndex.value;
+});
+
+const normalizedFocusIndex = computed(() => {
+  return normalizeFocusIndex(activeFocusIndex.value, itemLength.value);
+});
+
+const normalizedLauncherFocusIndex = computed(() => {
+  return normalizeFocusIndex(focusIndex.value, commands.value.length || 1);
+});
+
+const rotationPerItem = computed(() => 360 / itemLength.value);
 
 const ringSize = computed(() => {
   const gapPx = Math.max(8, iconSizePx.value * 0.35);
@@ -93,7 +144,7 @@ const ringStyle = computed(() => ({
 
 const commandStyle = computed(() => {
   return {
-    transform: `rotate(${rotationPerItem.value * -focusIndex.value}deg)`
+    transform: `rotate(${rotationPerItem.value * -activeFocusIndex.value}deg)`
   };
 });
 
@@ -107,16 +158,16 @@ const moveIntoGroup = (id: string) => {
   }
 };
 
-type RenderCommand = AppCommand & {
+type RenderRingItem = RingItem & {
   style: CSSProperties;
   iconStyle: CSSProperties;
   isFocus: boolean;
 };
 
-const renderCommands = computed<RenderCommand[]>(() => {
-  return commands.value.map((item, index) => {
+const renderRingItems = computed<RenderRingItem[]>(() => {
+  return activeRingItems.value.map((item, index) => {
     const angle = index * rotationPerItem.value;
-    const iconAngle = -(angle - focusIndex.value * rotationPerItem.value);
+    const iconAngle = -(angle - activeFocusIndex.value * rotationPerItem.value);
     return {
       ...item,
       style: { transform: `rotate(${angle}deg)` },
@@ -126,16 +177,40 @@ const renderCommands = computed<RenderCommand[]>(() => {
   });
 });
 
-const focusedItem = computed(() => {
-  return renderCommands.value[normalizedFocusIndex.value];
+const focusedLauncherItem = computed(() => {
+  return commands.value[normalizedLauncherFocusIndex.value];
 });
 
 const focusedCommand = computed(() => {
-  const item = focusedItem.value;
+  const item = focusedLauncherItem.value;
   return item?.type === "command" ? item : undefined;
 });
 
-const iconName = computed(() => focusedItem.value?.name);
+const windowSelectionStatusLabel = computed(() => {
+  if (!isWindowSelectionVisible.value) {
+    return undefined;
+  }
+  if (isWindowSelectionLoading.value) {
+    return "読み込み中";
+  }
+  if (windowSelectionError.value) {
+    return "ウィンドウ取得不可";
+  }
+  if (windowSelectionWindows.value.length === 0) {
+    return "ウィンドウなし";
+  }
+  return undefined;
+});
+
+const iconName = computed(() => {
+  if (isWindowSelectionVisible.value) {
+    return (
+      windowSelectionStatusLabel.value ??
+      activeRingItems.value[normalizedFocusIndex.value]?.name
+    );
+  }
+  return focusedLauncherItem.value?.name;
+});
 
 const canOpenWindowSelection = computed(() => {
   const command = focusedCommand.value;
@@ -183,14 +258,6 @@ const openWindowSelection = async () => {
   }
 };
 
-const toggleWindowSelection = () => {
-  if (isWindowSelectionVisible.value) {
-    closeWindowSelection();
-    return;
-  }
-  void openWindowSelection();
-};
-
 const moveWindowSelectionFocus = (delta: number) => {
   if (!isWindowSelectionVisible.value || windowSelectionWindows.value.length === 0) {
     return;
@@ -200,6 +267,7 @@ const moveWindowSelectionFocus = (delta: number) => {
 
 const onKeyDownRight = () => {
   if (isWindowSelectionVisible.value) {
+    moveWindowSelectionFocus(1);
     return;
   }
   focusIndex.value += 1;
@@ -207,6 +275,7 @@ const onKeyDownRight = () => {
 
 const onKeyDownLeft = () => {
   if (isWindowSelectionVisible.value) {
+    moveWindowSelectionFocus(-1);
     return;
   }
   focusIndex.value -= 1;
@@ -214,7 +283,6 @@ const onKeyDownLeft = () => {
 
 const onKeyDownUp = () => {
   if (isWindowSelectionVisible.value) {
-    moveWindowSelectionFocus(-1);
     return;
   }
 
@@ -234,17 +302,14 @@ const onKeyDownUp = () => {
   }
 };
 
-const onKeyDownDown = () => {
-  if (isWindowSelectionVisible.value) {
-    moveWindowSelectionFocus(1);
-  }
-};
-
 const onKeyDownZ = () => {
-  if (!isWindowSelectionVisible.value && !canOpenWindowSelection.value) {
+  if (isWindowSelectionVisible.value) {
+    closeWindowSelection();
     return;
   }
-  toggleWindowSelection();
+  if (canOpenWindowSelection.value) {
+    void openWindowSelection();
+  }
 };
 
 const onKeyDownEnter = () => {
@@ -256,7 +321,7 @@ const onKeyDownEnter = () => {
     return;
   }
 
-  const item = focusedItem.value;
+  const item = focusedLauncherItem.value;
 
   if (!item) {
     return;
@@ -271,11 +336,21 @@ const onKeyDownEnter = () => {
 
 // 大きすぎる値にならないように止まった時点でリセットする
 const onListTransitionEnd = () => {
-  if (Math.abs(focusIndex.value) >= itemLength.value) {
-    focusIndex.value =
-      focusIndex.value >= 0
-        ? Math.abs(focusIndex.value) % itemLength.value
-        : -Math.abs(focusIndex.value) % itemLength.value;
+  const currentFocusIndex = isWindowSelectionVisible.value
+    ? windowSelectionFocusIndex.value
+    : focusIndex.value;
+
+  if (Math.abs(currentFocusIndex) >= itemLength.value) {
+    const nextFocusIndex =
+      currentFocusIndex >= 0
+        ? Math.abs(currentFocusIndex) % itemLength.value
+        : -Math.abs(currentFocusIndex) % itemLength.value;
+
+    if (isWindowSelectionVisible.value) {
+      windowSelectionFocusIndex.value = nextFocusIndex;
+    } else {
+      focusIndex.value = nextFocusIndex;
+    }
     pauseTransition.value = true;
     setTimeout(() => {
       pauseTransition.value = false;
@@ -365,22 +440,13 @@ onMounted(() => {
       @keydown.right="onKeyDownRight"
       @keydown.left="onKeyDownLeft"
       @keydown.up="onKeyDownUp"
-      @keydown.down="onKeyDownDown"
       @keydown.z.prevent="onKeyDownZ"
       @keydown.esc="onKeyDownEsc"
       @keydown.enter="onKeyDownEnter"
       ref="commandListElement"
       tabindex="0"
     >
-      <WindowList
-        v-if="isWindowSelectionVisible"
-        :appName="focusedCommand?.name"
-        :error="windowSelectionError"
-        :focusIndex="windowSelectionFocusIndex"
-        :loading="isWindowSelectionLoading"
-        :windows="windowSelectionWindows"
-      />
-      <div class="ring-command-list outer" v-else>
+      <div class="ring-command-list outer">
         <ul
           class="ring-command-list inner"
           :class="{ pause: pauseTransition }"
@@ -388,7 +454,7 @@ onMounted(() => {
           @transitionend.stop="onListTransitionEnd"
         >
           <li
-            v-for="item in renderCommands"
+            v-for="item in renderRingItems"
             :key="item.id"
             :style="item.style"
             :class="[{ focus: item.isFocus }, `size-${config.iconSize}`]"
@@ -397,10 +463,10 @@ onMounted(() => {
             <div class="ring-command-item inner" @transitionend.stop>
               <AppIcon
                 class="icon"
-                :image="createIconSrc(item)"
+                :image="item.image"
                 :iconSize="config.iconSize"
                 :type="item.type"
-                :isRunning="isAppRunning(item.id)"
+                :isRunning="item.isRunning"
                 :style="item.iconStyle"
               />
             </div>
@@ -410,12 +476,11 @@ onMounted(() => {
       <CommandCursor
         class="cursor"
         :class="`size-${config.iconSize}`"
-        v-if="!isWindowSelectionVisible"
+        v-if="renderRingItems.length > 0"
       />
       <span
         class="name"
         :class="`size-${config.iconSize}`"
-        v-if="!isWindowSelectionVisible"
       >
         {{ iconName }}
       </span>
@@ -538,9 +603,14 @@ $icon-size-3: 64px;
   align-items: center;
   width: 100%;
   position: absolute;
+  overflow: hidden;
+  padding: 0 8px;
   font-size: 12px;
   font-weight: bold;
   color: #ffffff;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &.size-0 {
     top: 32px;
