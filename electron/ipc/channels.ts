@@ -18,6 +18,7 @@ export const IPC_CHANNELS = {
   getCommands: "get:commands",
   getRunningApps: "get:running-apps",
   getRunningWindows: "get:running-windows",
+  getWindowSelectionPermissions: "get:window-selection-permissions",
   setCommands: "set:commands",
   addAppCommand: "add:appCommand",
   addApplication: "add:application",

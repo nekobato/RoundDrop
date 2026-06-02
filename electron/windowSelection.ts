@@ -5,11 +5,11 @@ import { desktopCapturer, systemPreferences } from "electron";
 import type {
   RunningWindow,
   RunningWindowsResult,
+  WindowSelectionPermissionCheckResult,
   WindowSelectionPermissionStatus
 } from "../src/types/app";
 
 const NO_THUMBNAIL_SIZE = { width: 0, height: 0 };
-const PERMISSION_PROBE_THUMBNAIL_SIZE = { width: 1, height: 1 };
 
 /**
  * Convert Electron's platform media status into the shared renderer type.
@@ -30,6 +30,36 @@ export const isBlockingPermissionStatus = (
 ) => {
   return status === "denied" || status === "restricted";
 };
+
+/**
+ * Check required permissions without showing macOS system prompts.
+ */
+export const getWindowSelectionPermissions =
+  (): WindowSelectionPermissionCheckResult => {
+    const screenRecordingStatus = getWindowSelectionPermissionStatus();
+    const screenRecordingGranted = screenRecordingStatus === "granted";
+    const accessibilityGranted =
+      process.platform !== "darwin" ||
+      systemPreferences.isTrustedAccessibilityClient(false);
+    const permissions = [
+      {
+        name: "screen-recording" as const,
+        label: "画面収録",
+        granted: screenRecordingGranted,
+        status: screenRecordingStatus
+      },
+      {
+        name: "accessibility" as const,
+        label: "アクセシビリティ",
+        granted: accessibilityGranted
+      }
+    ];
+
+    return {
+      granted: permissions.every((permission) => permission.granted),
+      permissions
+    };
+  };
 
 /**
  * Convert a capturer source into the renderer-safe window shape.
@@ -67,16 +97,4 @@ export const getRunningWindows = async (): Promise<RunningWindowsResult> => {
     windows: sources.map(toRunningWindow),
     status: getWindowSelectionPermissionStatus()
   };
-};
-
-/**
- * Probe desktopCapturer once so macOS can present the screen capture prompt.
- */
-export const requestWindowSelectionPermission = async () => {
-  await desktopCapturer.getSources({
-    types: ["window"],
-    thumbnailSize: PERMISSION_PROBE_THUMBNAIL_SIZE,
-    fetchWindowIcons: true
-  });
-  return getWindowSelectionPermissionStatus();
 };

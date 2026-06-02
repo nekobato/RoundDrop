@@ -25,15 +25,16 @@ import {
 } from "../utils/appMetadata";
 import {
   getWindowSelectionPermissionStatus,
+  getWindowSelectionPermissions,
   getRunningWindows,
-  isBlockingPermissionStatus,
-  requestWindowSelectionPermission
+  isBlockingPermissionStatus
 } from "../windowSelection";
 import { IPC_CHANNELS } from "./channels";
 import type { RunningAppsState } from "../runningApps";
 import type {
   AppCommand,
   Config,
+  WindowSelectionPermissionCheckResult,
   RunningWindowsResult,
   WindowSelectionToggleResult
 } from "../../src/types/app";
@@ -138,13 +139,15 @@ export const registerIpcHandlers = ({
 
       const logPath = getMainLogPath();
       try {
-        const status = await requestWindowSelectionPermission();
-        if (isBlockingPermissionStatus(status)) {
+        const permissions = getWindowSelectionPermissions();
+        const status = getWindowSelectionPermissionStatus();
+        if (!permissions.granted) {
           return {
             enabled: false,
             status,
+            permissions: permissions.permissions,
             error:
-              "ウィンドウ選択機能には画面収録の権限が必要です。macOS のシステム設定から許可してください",
+              "ウィンドウ選択機能に必要な権限が許可されていません",
             logPath
           };
         }
@@ -158,7 +161,7 @@ export const registerIpcHandlers = ({
       } catch (error) {
         logError(
           "windowSelection",
-          "Failed to request window selection permission",
+          "Failed to enable window selection",
           error
         );
         return {
@@ -180,10 +183,27 @@ export const registerIpcHandlers = ({
   });
 
   ipcMain.handle(
+    IPC_CHANNELS.getWindowSelectionPermissions,
+    (): WindowSelectionPermissionCheckResult => {
+      return getWindowSelectionPermissions();
+    }
+  );
+
+  ipcMain.handle(
     IPC_CHANNELS.getRunningWindows,
     async (): Promise<RunningWindowsResult> => {
       const logPath = getMainLogPath();
       try {
+        const permissions = getWindowSelectionPermissions();
+        if (!permissions.granted) {
+          return {
+            windows: [],
+            status: getWindowSelectionPermissionStatus(),
+            error:
+              "ウィンドウ一覧を表示するには権限が必要です。macOS のシステム設定から許可してください",
+            logPath
+          };
+        }
         const result = await getRunningWindows();
         if (isBlockingPermissionStatus(result.status)) {
           return {

@@ -30,6 +30,22 @@ export type WindowSelectionPermissionStatus =
   | "restricted"
   | "unknown";
 
+export type WindowSelectionPermissionName =
+  | "screen-recording"
+  | "accessibility";
+
+export type WindowSelectionPermission = {
+  name: WindowSelectionPermissionName;
+  label: string;
+  granted: boolean;
+  status?: WindowSelectionPermissionStatus;
+};
+
+export type WindowSelectionPermissionCheckResult = {
+  granted: boolean;
+  permissions: WindowSelectionPermission[];
+};
+
 export type RunningWindowsResult = {
   windows: RunningWindow[];
   status: WindowSelectionPermissionStatus;
@@ -40,6 +56,7 @@ export type RunningWindowsResult = {
 export type WindowSelectionToggleResult = {
   enabled: boolean;
   status: WindowSelectionPermissionStatus;
+  permissions?: WindowSelectionPermission[];
   error?: string;
   logPath?: string;
 };

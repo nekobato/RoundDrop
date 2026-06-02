@@ -3,6 +3,8 @@ import { Ref, computed, inject, ref } from "vue";
 import type {
   AppCommand,
   Config,
+  WindowSelectionPermission,
+  WindowSelectionPermissionCheckResult,
   WindowSelectionToggleResult
 } from "@/types/app";
 import {
@@ -22,6 +24,8 @@ const drag = ref(false);
 const dragDepth = ref(0);
 const shortcutInput = ref<HTMLInputElement>();
 const isWindowSelectionUpdating = ref(false);
+const isWindowSelectionPermissionDialogVisible = ref(false);
+const windowSelectionPermissions = ref<WindowSelectionPermission[]>([]);
 
 const iconSize = computed(() => {
   const sizes = ["24", "32", "48", "64"];
@@ -63,26 +67,87 @@ const createWindowSelectionMessage = (result: WindowSelectionToggleResult) => {
   return result.logPath ? `${result.error}\n${result.logPath}` : result.error;
 };
 
+const getWindowSelectionPermissions = async () => {
+  return (await window.ipc.invoke(
+    "get:window-selection-permissions"
+  )) as WindowSelectionPermissionCheckResult;
+};
+
+const applyWindowSelectionToggle = async (enabled: boolean) => {
+  const result = (await window.ipc.invoke(
+    "set:windowSelectionEnabled",
+    enabled
+  )) as WindowSelectionToggleResult;
+  const errorMessage = createWindowSelectionMessage(result);
+  if (errorMessage) {
+    ElMessage.error(errorMessage);
+  }
+  emit("change");
+  return result;
+};
+
 const onChangeWindowSelectionEnabled = async (e: Event) => {
   if (!config || isWindowSelectionUpdating.value) {
     return;
   }
 
   const enabled = (e.target as HTMLInputElement).checked;
+  if (!enabled) {
+    isWindowSelectionUpdating.value = true;
+    try {
+      await applyWindowSelectionToggle(false);
+    } catch (error) {
+      console.error("[config] Failed to update window selection setting", error);
+      ElMessage.error("ウィンドウ選択機能の設定に失敗しました");
+    } finally {
+      isWindowSelectionUpdating.value = false;
+    }
+    return;
+  }
+
   isWindowSelectionUpdating.value = true;
   try {
-    const result = (await window.ipc.invoke(
-      "set:windowSelectionEnabled",
-      enabled
-    )) as WindowSelectionToggleResult;
-    const errorMessage = createWindowSelectionMessage(result);
-    if (errorMessage) {
-      ElMessage.error(errorMessage);
+    const permissions = await getWindowSelectionPermissions();
+    windowSelectionPermissions.value = permissions.permissions;
+    if (!permissions.granted) {
+      isWindowSelectionPermissionDialogVisible.value = true;
+      return;
     }
-    emit("change");
+
+    await applyWindowSelectionToggle(true);
   } catch (error) {
     console.error("[config] Failed to update window selection setting", error);
     ElMessage.error("ウィンドウ選択機能の設定に失敗しました");
+  } finally {
+    isWindowSelectionUpdating.value = false;
+  }
+};
+
+const onCancelWindowSelectionPermission = () => {
+  isWindowSelectionPermissionDialogVisible.value = false;
+};
+
+const onEnableWindowSelectionFromPermissionDialog = async () => {
+  if (!config || isWindowSelectionUpdating.value) {
+    return;
+  }
+
+  isWindowSelectionUpdating.value = true;
+  try {
+    const permissions = await getWindowSelectionPermissions();
+    windowSelectionPermissions.value = permissions.permissions;
+    if (!permissions.granted) {
+      ElMessage.error("必要な権限が許可されていません");
+      return;
+    }
+
+    const result = await applyWindowSelectionToggle(true);
+    if (result.enabled) {
+      isWindowSelectionPermissionDialogVisible.value = false;
+    }
+  } catch (error) {
+    console.error("[config] Failed to enable window selection", error);
+    ElMessage.error("ウィンドウ選択機能の有効化に失敗しました");
   } finally {
     isWindowSelectionUpdating.value = false;
   }
@@ -297,6 +362,41 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
       </div>
       <div class="on-file-drag-overlay" :class="{ drag }" />
     </div>
+    <el-dialog
+      v-model="isWindowSelectionPermissionDialogVisible"
+      title="権限が必要です"
+      width="360px"
+      :close-on-click-modal="false"
+    >
+      <p class="permission-description">
+        ウィンドウ選択機能を有効にするには、以下の権限が必要です。
+      </p>
+      <ul class="permission-list">
+        <li
+          v-for="permission in windowSelectionPermissions"
+          :key="permission.name"
+        >
+          {{ permission.label }}
+        </li>
+      </ul>
+      <template #footer>
+        <button
+          class="dialog-button secondary"
+          type="button"
+          @click="onCancelWindowSelectionPermission"
+        >
+          キャンセル
+        </button>
+        <button
+          class="dialog-button primary"
+          type="button"
+          :disabled="isWindowSelectionUpdating"
+          @click="onEnableWindowSelectionFromPermissionDialog"
+        >
+          機能を有効にする
+        </button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -421,6 +521,40 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
   border-radius: 999px;
   background-color: var(--color-white);
   transition: transform 0.16s ease;
+}
+.permission-description {
+  margin: 0 0 12px;
+  color: var(--color-text-body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.permission-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--color-text-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.dialog-button {
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-white-50);
+  cursor: pointer;
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.64;
+  }
+
+  &.secondary {
+    background-color: var(--color-white-t100);
+  }
+
+  &.primary {
+    background-color: var(--color-teal-500);
+  }
 }
 .actions {
   display: flex;
