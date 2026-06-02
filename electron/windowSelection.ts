@@ -51,6 +51,10 @@ const toRunningWindow = (
 
 /**
  * Read currently available window sources without collecting thumbnails.
+ *
+ * This intentionally does not resolve or filter by bundleId: the window view
+ * lists Electron-reported window sources, not only applications registered in
+ * the RoundDrop launcher.
  */
 export const getRunningWindows = async (): Promise<RunningWindowsResult> => {
   const sources = await desktopCapturer.getSources({
