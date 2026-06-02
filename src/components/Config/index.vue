@@ -375,8 +375,15 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
         <li
           v-for="permission in windowSelectionPermissions"
           :key="permission.name"
+          class="permission-item"
+          :class="{ granted: permission.granted }"
         >
-          {{ permission.label }}
+          <Icon
+            class="permission-icon"
+            icon="mingcute:check-circle-fill"
+            aria-hidden="true"
+          />
+          <span>{{ permission.label }}</span>
         </li>
       </ul>
       <template #footer>
@@ -529,11 +536,34 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
   line-height: 1.5;
 }
 .permission-list {
+  display: grid;
+  gap: 8px;
   margin: 0;
-  padding-left: 20px;
-  color: var(--color-text-body);
+  padding: 0;
+  list-style: none;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.4;
+}
+.permission-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-error);
+
+  &.granted {
+    color: var(--color-success);
+  }
+}
+.permission-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: currentColor;
+  opacity: 0.4;
+
+  .permission-item.granted & {
+    opacity: 1;
+  }
 }
 .dialog-button {
   height: 32px;

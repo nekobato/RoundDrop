@@ -33,25 +33,24 @@ export const isBlockingPermissionStatus = (
 
 /**
  * Check required permissions without showing macOS system prompts.
+ *
+ * macOS TCC evaluates the currently running Electron process. During pnpm dev,
+ * that can differ from the packaged RoundDrop.app identity the user approved.
+ *
+ * Accessibility is not gated here: the current window view lists
+ * desktopCapturer window sources and activates the original app path, without
+ * using Accessibility APIs to focus a specific window.
  */
 export const getWindowSelectionPermissions =
   (): WindowSelectionPermissionCheckResult => {
     const screenRecordingStatus = getWindowSelectionPermissionStatus();
     const screenRecordingGranted = screenRecordingStatus === "granted";
-    const accessibilityGranted =
-      process.platform !== "darwin" ||
-      systemPreferences.isTrustedAccessibilityClient(false);
     const permissions = [
       {
         name: "screen-recording" as const,
         label: "画面収録",
         granted: screenRecordingGranted,
         status: screenRecordingStatus
-      },
-      {
-        name: "accessibility" as const,
-        label: "アクセシビリティ",
-        granted: accessibilityGranted
       }
     ];
 
