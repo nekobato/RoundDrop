@@ -27,6 +27,10 @@ const iconSize = computed(() => {
   }
 });
 
+const isDiagnosticsEnabled = computed(() => {
+  return currentConfig.value.diagnostics.enabled;
+});
+
 const onKeyDownOnShortcut = async (e: KeyboardEvent) => {
   const shortcut = keyboardEventToElectronAccelerator(e);
 
@@ -47,6 +51,17 @@ const onChangeIconSize = async (e: Event) => {
   const size = (e.target as HTMLInputElement).value;
   if (config) {
     await window.ipc.invoke("set:iconSize", Number(size));
+    emit("change");
+  }
+};
+
+const onChangeDiagnostics = async (e: Event) => {
+  const enabled = (e.target as HTMLInputElement).checked;
+  if (config) {
+    await window.ipc.invoke("set:diagnostics", { enabled });
+    if (enabled && !import.meta.env.VITE_SENTRY_DSN?.trim()) {
+      ElMessage.warning("Sentry DSN が未設定です");
+    }
     emit("change");
   }
 };
@@ -215,6 +230,21 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
             @change="onChangeIconSize"
           />
         </div>
+        <div class="input-field diagnostics-field">
+          <label class="checkbox-label" for="diagnostics-enabled">
+            <input
+              id="diagnostics-enabled"
+              type="checkbox"
+              name="diagnostics-enabled"
+              :checked="isDiagnosticsEnabled"
+              @change="onChangeDiagnostics"
+            />
+            <span>匿名の診断データを送信</span>
+          </label>
+          <p class="field-hint">
+            クラッシュ、エラー、主要操作のみ。アプリ名やパスは送信しません。
+          </p>
+        </div>
       </div>
       <div class="right-side">
         <div class="command-list-container">
@@ -308,6 +338,37 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
       border-color: var(--color-white-t600);
       background-color: var(--color-white-t100);
     }
+  }
+}
+.diagnostics-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    color: var(--color-white-50);
+    cursor: pointer;
+    line-height: 1.4;
+  }
+
+  input[type="checkbox"] {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    accent-color: var(--color-teal-500);
+    cursor: pointer;
+  }
+
+  .field-hint {
+    margin: 0;
+    color: var(--color-white-t500);
+    font-size: 11px;
+    line-height: 1.5;
   }
 }
 .actions {

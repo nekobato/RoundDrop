@@ -9,6 +9,7 @@ import {
   getConfig,
   getShortcuts,
   setCommands,
+  setDiagnostics,
   setIconSize,
   setShortcut
 } from "../store";
@@ -23,6 +24,11 @@ import {
   getBundleIdFromApp
 } from "../utils/appMetadata";
 import { IPC_CHANNELS } from "./channels";
+import {
+  captureUsageEvent,
+  configureSentryFromConfig,
+  reportError
+} from "../utils/sentry";
 import type { RunningAppsState } from "../runningApps";
 import type { AppCommand, Config } from "../../src/types/app";
 
@@ -30,6 +36,8 @@ type ShortcutPayload = {
   name: keyof Config["shortcuts"];
   command: string;
 };
+
+type DiagnosticsPayload = Config["diagnostics"];
 
 type AddAppCommandPayload = {
   path: string;
@@ -79,18 +87,22 @@ export const registerIpcHandlers = ({
   });
 
   ipcMain.on(IPC_CHANNELS.ringOpened, () => {
+    captureUsageEvent("ring_opened");
     handleRingOpened();
   });
 
   ipcMain.on(IPC_CHANNELS.ringClosed, () => {
+    captureUsageEvent("ring_closed");
     handleRingClosed();
   });
 
   ipcMain.on(IPC_CHANNELS.configOpen, () => {
+    captureUsageEvent("config_opened");
     openConfig();
   });
 
   ipcMain.on(IPC_CHANNELS.configClose, () => {
+    captureUsageEvent("config_closed");
     closeConfig();
   });
 
@@ -104,13 +116,30 @@ export const registerIpcHandlers = ({
 
   ipcMain.handle(IPC_CHANNELS.setShortcuts, (_, payload: ShortcutPayload) => {
     setShortcut(payload);
+    captureUsageEvent("shortcut_changed", {
+      shortcut_name: payload.name
+    });
     notifyConfigUpdated();
   });
 
   ipcMain.handle(IPC_CHANNELS.setIconSize, (_, payload: number) => {
     setIconSize(payload);
+    captureUsageEvent("icon_size_changed", {
+      icon_size: payload
+    });
     notifyConfigUpdated();
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.setDiagnostics,
+    async (_, payload: DiagnosticsPayload) => {
+      setDiagnostics(payload);
+      await configureSentryFromConfig();
+      captureUsageEvent("diagnostics_enabled");
+      notifyConfigUpdated();
+    }
+  );
+
   ipcMain.handle(IPC_CHANNELS.getCommands, () => {
     return getCommands();
   });
@@ -122,6 +151,9 @@ export const registerIpcHandlers = ({
   ipcMain.handle(IPC_CHANNELS.setCommands, async (_, payload: AppCommand[]) => {
     const { commands } = await ensureBundleIdsInCommands(payload);
     setCommands(commands);
+    captureUsageEvent("commands_updated", {
+      command_count: commands.length
+    });
     notifyConfigUpdated();
   });
 
@@ -151,12 +183,16 @@ export const registerIpcHandlers = ({
             bundleId
           }
         ]);
+        captureUsageEvent("application_added", {
+          source: "drag-and-drop"
+        });
         notifyConfigUpdated();
 
         return warning
           ? ({ warning, logPath } satisfies AddCommandResult)
           : undefined;
       } catch (error) {
+        reportError(error);
         logError("addAppCommand", "Failed to add application command", error, {
           appPath: file.path
         });
@@ -204,12 +240,16 @@ export const registerIpcHandlers = ({
           bundleId
         }
       ]);
+      captureUsageEvent("application_added", {
+        source: "dialog"
+      });
       notifyConfigUpdated();
 
       return warning
         ? ({ warning, logPath } satisfies AddCommandResult)
         : undefined;
     } catch (error) {
+      reportError(error);
       logError("addApplication", "Failed to add application", error, {
         appPath: filePath
       });
@@ -232,6 +272,7 @@ export const registerIpcHandlers = ({
           command: ""
         }
       ]);
+      captureUsageEvent("group_added");
       notifyConfigUpdated();
     }
   );
@@ -255,8 +296,10 @@ export const registerIpcHandlers = ({
 
       try {
         await saveCustomIconImage(id, filePaths[0]);
+        captureUsageEvent("group_icon_changed");
         return { updatedAt: Date.now() };
       } catch (error) {
+        reportError(error);
         logError("image", "Failed to save group icon", error, {
           imagePath: filePaths[0],
           id
@@ -267,11 +310,14 @@ export const registerIpcHandlers = ({
   );
 
   ipcMain.handle(IPC_CHANNELS.removeCommandImage, (_, id: string) => {
-    return deleteImage(id);
+    const result = deleteImage(id);
+    captureUsageEvent("group_icon_removed");
+    return result;
   });
 
   ipcMain.on(IPC_CHANNELS.openPath, (_, targetPath: string) => {
     if (targetPath) {
+      captureUsageEvent("command_opened");
       requestRingClose();
       shell.openPath(targetPath);
     }

@@ -3,6 +3,7 @@ import { onMounted, ref, provide } from "vue";
 import Ring from "@/components/Ring.vue";
 import Config from "./components/Config/index.vue";
 import { defaultConfig } from "./utils";
+import { configureSentry } from "./sentry";
 
 const isConfigWindow =
   new URLSearchParams(window.location.search).get("window") === "config";
@@ -19,6 +20,7 @@ const applyRunningApps = (payload?: Record<string, boolean>) => {
 
 const onChangeConfig = async () => {
   config.value = await window.ipc.invoke("get:config");
+  await configureSentry(config.value.diagnostics.enabled);
 };
 
 if (!isConfigWindow) {

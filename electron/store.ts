@@ -16,6 +16,9 @@ const DEFAULT_CONFIG: Config = {
     toggleCommand: "Control+Alt+Z"
   },
   iconSize: 3,
+  diagnostics: {
+    enabled: false
+  },
   commands: []
 };
 
@@ -32,6 +35,10 @@ const normalizeConfig = (config?: Partial<Config>): Config => {
       typeof config?.iconSize === "number"
         ? config.iconSize
         : DEFAULT_CONFIG.iconSize,
+    diagnostics: {
+      ...DEFAULT_CONFIG.diagnostics,
+      ...(config?.diagnostics ?? {})
+    },
     commands: Array.isArray(config?.commands)
       ? config.commands
       : [...DEFAULT_CONFIG.commands]
@@ -57,6 +64,18 @@ export const store = new Store<Config>({
     iconSize: {
       type: "number",
       default: DEFAULT_CONFIG.iconSize
+    },
+    diagnostics: {
+      type: "object",
+      default: DEFAULT_CONFIG.diagnostics,
+      properties: {
+        enabled: {
+          type: "boolean",
+          default: DEFAULT_CONFIG.diagnostics.enabled
+        }
+      },
+      required: ["enabled"],
+      additionalProperties: false
     },
     commands: {
       type: "array",
@@ -132,6 +151,13 @@ export const setShortcut = ({ name, command }: ShortcutPayload) => {
  */
 export const setIconSize = (iconSize: number) => {
   store.set("iconSize", iconSize);
+};
+
+/**
+ * Update diagnostic event collection settings.
+ */
+export const setDiagnostics = (diagnostics: Config["diagnostics"]) => {
+  store.set("diagnostics", diagnostics);
 };
 
 /**

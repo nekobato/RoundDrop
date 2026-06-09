@@ -13,5 +13,8 @@ export type Config = {
     toggleCommand: string;
   };
   iconSize: number;
+  diagnostics: {
+    enabled: boolean;
+  };
   commands: AppCommand[];
 };

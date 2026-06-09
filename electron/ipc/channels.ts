@@ -14,6 +14,7 @@ export const IPC_CHANNELS = {
   getShortcuts: "get:shortcuts",
   setShortcuts: "set:shortcuts",
   setIconSize: "set:iconSize",
+  setDiagnostics: "set:diagnostics",
   getCommands: "get:commands",
   getRunningApps: "get:running-apps",
   setCommands: "set:commands",

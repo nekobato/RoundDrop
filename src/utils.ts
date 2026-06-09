@@ -1,10 +1,14 @@
 import { isProxy, isReactive, isRef, toRaw } from "vue";
+import type { Config } from "./types/app";
 
-export const defaultConfig = {
+export const defaultConfig: Config = {
   shortcuts: {
     toggleCommand: "Control+Alt+Z"
   },
   iconSize: 3,
+  diagnostics: {
+    enabled: false
+  },
   commands: []
 };
 
