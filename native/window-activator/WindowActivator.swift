@@ -2,6 +2,8 @@ import AppKit
 import ApplicationServices
 import Foundation
 
+let APP_ICON_SIZE = NSSize(width: 64, height: 64)
+
 struct ActivationResponse: Encodable {
   let activated: Bool
   let focused: Bool
@@ -12,13 +14,23 @@ struct ActivationResponse: Encodable {
   let title: String?
 }
 
+struct RunningWindowResponse: Encodable {
+  let id: String
+  let title: String
+  let appIcon: String?
+}
+
+struct WindowListResponse: Encodable {
+  let windows: [RunningWindowResponse]
+}
+
 struct WindowInfo {
   let id: CGWindowID
   let processId: pid_t
   let title: String?
 }
 
-func printResponse(_ response: ActivationResponse) {
+func printResponse<T: Encodable>(_ response: T) {
   let encoder = JSONEncoder()
   guard let data = try? encoder.encode(response),
         let output = String(data: data, encoding: .utf8)
@@ -27,6 +39,136 @@ func printResponse(_ response: ActivationResponse) {
     exit(1)
   }
   print(output)
+}
+
+func stringValue(_ value: Any?) -> String? {
+  guard let string = value as? String else {
+    return nil
+  }
+  let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+  return trimmed.isEmpty ? nil : trimmed
+}
+
+func numberValue(_ value: Any?) -> NSNumber? {
+  if let number = value as? NSNumber {
+    return number
+  }
+  if let integer = value as? Int {
+    return NSNumber(value: integer)
+  }
+  if let unsignedInteger = value as? UInt32 {
+    return NSNumber(value: unsignedInteger)
+  }
+  return nil
+}
+
+func cgWindowId(_ value: Any?) -> CGWindowID? {
+  guard let number = numberValue(value) else {
+    return nil
+  }
+  return CGWindowID(number.uint32Value)
+}
+
+func windowBounds(_ info: [String: Any]) -> CGRect? {
+  guard let bounds = info[kCGWindowBounds as String] as? [String: Any],
+        let x = numberValue(bounds["X"]),
+        let y = numberValue(bounds["Y"]),
+        let width = numberValue(bounds["Width"]),
+        let height = numberValue(bounds["Height"])
+  else {
+    return nil
+  }
+
+  return CGRect(
+    x: x.doubleValue,
+    y: y.doubleValue,
+    width: width.doubleValue,
+    height: height.doubleValue
+  )
+}
+
+func displayWindowTitle(ownerName: String?, windowName: String?) -> String {
+  guard let windowName else {
+    return ownerName ?? "名称未設定のウィンドウ"
+  }
+
+  guard let ownerName, ownerName != windowName else {
+    return windowName
+  }
+
+  return "\(ownerName) - \(windowName)"
+}
+
+func isListableWindow(_ info: [String: Any]) -> Bool {
+  guard cgWindowId(info[kCGWindowNumber as String]) != nil,
+        numberValue(info[kCGWindowOwnerPID as String]) != nil,
+        numberValue(info[kCGWindowLayer as String])?.intValue == 0,
+        numberValue(info[kCGWindowAlpha as String])?.doubleValue != 0,
+        let bounds = windowBounds(info),
+        bounds.width > 0,
+        bounds.height > 0
+  else {
+    return false
+  }
+
+  return true
+}
+
+func pngDataURL(from image: NSImage) -> String? {
+  guard image.size.width > 0, image.size.height > 0 else {
+    return nil
+  }
+
+  let scaledImage = NSImage(size: APP_ICON_SIZE)
+  let destinationRect = NSRect(origin: .zero, size: APP_ICON_SIZE)
+  let sourceRect = NSRect(origin: .zero, size: image.size)
+
+  scaledImage.lockFocus()
+  image.draw(
+    in: destinationRect,
+    from: sourceRect,
+    operation: .copy,
+    fraction: 1.0
+  )
+  scaledImage.unlockFocus()
+
+  guard let tiffData = scaledImage.tiffRepresentation,
+        let bitmap = NSBitmapImageRep(data: tiffData),
+        let pngData = bitmap.representation(using: .png, properties: [:])
+  else {
+    return nil
+  }
+
+  return "data:image/png;base64,\(pngData.base64EncodedString())"
+}
+
+func appIconDataURL(processId: pid_t) -> String? {
+  guard let application = NSRunningApplication(processIdentifier: processId)
+  else {
+    return nil
+  }
+
+  let image = application.bundleURL
+    .map { NSWorkspace.shared.icon(forFile: $0.path) }
+    ?? application.icon
+
+  guard let image else {
+    return nil
+  }
+
+  return pngDataURL(from: image)
+}
+
+func runningApplication(processId: pid_t) -> NSRunningApplication? {
+  return NSRunningApplication(processIdentifier: processId)
+}
+
+func isActivatableApplication(processId: pid_t) -> Bool {
+  guard let application = runningApplication(processId: processId) else {
+    return false
+  }
+
+  return application.activationPolicy != .prohibited
 }
 
 func parseMediaSourceWindowId(_ mediaSourceId: String) -> CGWindowID? {
@@ -41,9 +183,15 @@ func parseMediaSourceWindowId(_ mediaSourceId: String) -> CGWindowID? {
 }
 
 func findWindowInfo(windowId: CGWindowID) -> WindowInfo? {
-  guard let windowList = CGWindowListCopyWindowInfo(.optionIncludingWindow, windowId) as? [[String: Any]],
-        let info = windowList.first,
-        let processId = info[kCGWindowOwnerPID as String] as? pid_t
+  let options: CGWindowListOption = [.optionAll, .excludeDesktopElements]
+  guard let windowList = CGWindowListCopyWindowInfo(
+    options,
+    kCGNullWindowID
+  ) as? [[String: Any]],
+        let info = windowList.first(where: {
+          cgWindowId($0[kCGWindowNumber as String]) == windowId
+        }),
+        let processId = numberValue(info[kCGWindowOwnerPID as String])?.int32Value
   else {
     return nil
   }
@@ -113,6 +261,58 @@ func isAccessibilityTrusted() -> Bool {
     kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true
   ] as CFDictionary
   return AXIsProcessTrustedWithOptions(options)
+}
+
+func canInspectAccessibilityWindows() -> Bool {
+  return AXIsProcessTrusted()
+}
+
+func listWindows() {
+  let options: CGWindowListOption = [.optionAll, .excludeDesktopElements]
+  guard let windowList = CGWindowListCopyWindowInfo(
+    options,
+    kCGNullWindowID
+  ) as? [[String: Any]]
+  else {
+    printResponse(WindowListResponse(windows: []))
+    exit(0)
+  }
+
+  var seenWindowIds = Set<CGWindowID>()
+  var appIconCache = [pid_t: String]()
+  let shouldFilterByAccessibility = canInspectAccessibilityWindows()
+  let windows = windowList.compactMap { info -> RunningWindowResponse? in
+    guard isListableWindow(info),
+          let windowId = cgWindowId(info[kCGWindowNumber as String]),
+          let processId = numberValue(info[kCGWindowOwnerPID as String])?.int32Value,
+          let windowName = stringValue(info[kCGWindowName as String]),
+          isActivatableApplication(processId: processId),
+          !seenWindowIds.contains(windowId)
+    else {
+      return nil
+    }
+
+    let windowInfo = WindowInfo(id: windowId, processId: processId, title: windowName)
+    if shouldFilterByAccessibility && findAXWindow(for: windowInfo) == nil {
+      return nil
+    }
+
+    seenWindowIds.insert(windowId)
+    let ownerName = stringValue(info[kCGWindowOwnerName as String])
+    let appIcon = appIconCache[processId] ?? appIconDataURL(processId: processId)
+    if let appIcon {
+      appIconCache[processId] = appIcon
+    }
+
+    return RunningWindowResponse(
+      id: "window:\(windowId):0",
+      title: displayWindowTitle(ownerName: ownerName, windowName: windowName),
+      appIcon: appIcon
+    )
+  }
+
+  printResponse(WindowListResponse(windows: windows))
+  exit(0)
 }
 
 func activateWindow(mediaSourceId: String) {
@@ -193,13 +393,17 @@ func activateWindow(mediaSourceId: String) {
 }
 
 let arguments = Array(CommandLine.arguments.dropFirst())
+if arguments.count == 1, arguments[0] == "list" {
+  listWindows()
+}
+
 guard arguments.count == 2, arguments[0] == "activate" else {
   printResponse(
     ActivationResponse(
       activated: false,
       focused: false,
       status: "invalid-arguments",
-      error: "Usage: WindowActivator activate <desktopCapturerSourceId>",
+      error: "Usage: WindowActivator list | activate <desktopCapturerSourceId>",
       windowId: nil,
       processId: nil,
       title: nil

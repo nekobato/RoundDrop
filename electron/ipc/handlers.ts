@@ -267,7 +267,7 @@ export const registerIpcHandlers = ({
             logPath
           };
         }
-        return result;
+        return result.error ? { ...result, logPath } : result;
       } catch (error) {
         logError("windowSelection", "Failed to get running windows", error);
         return {
@@ -286,10 +286,7 @@ export const registerIpcHandlers = ({
       const logPath = getMainLogPath();
       try {
         const result = await activateRunningWindow(payload);
-        if (result.focused || (result.activated && !result.error)) {
-          requestRingClose();
-        }
-        return result.error ? { ...result, logPath } : result;
+        return result;
       } catch (error) {
         logError("windowActivation", "Failed to focus running window", error);
         return {
@@ -299,6 +296,8 @@ export const registerIpcHandlers = ({
           error: "ウィンドウの前面化に失敗しました",
           logPath
         };
+      } finally {
+        requestRingClose();
       }
     }
   );

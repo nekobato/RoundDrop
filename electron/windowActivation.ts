@@ -1,26 +1,11 @@
 /**
  * macOS window activation helpers backed by a native Swift helper.
  */
-import { app } from "electron";
-import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
 import type {
   WindowActivationRequest,
   WindowActivationResult
 } from "../src/types/app";
-
-const HELPER_TIMEOUT_MS = 5000;
-const HELPER_BINARY_NAME = "rounddrop-window-activator";
-const SWIFT_SOURCE_PATH = path.join(
-  process.cwd(),
-  "native/window-activator/WindowActivator.swift"
-);
-
-type HelperInvocation = {
-  command: string;
-  args: string[];
-};
+import { runWindowNativeHelper } from "./windowNativeHelper";
 
 /**
  * Validate Electron desktopCapturer window source ids before invoking native code.
@@ -28,48 +13,6 @@ type HelperInvocation = {
 export const parseWindowSourceId = (sourceId: string) => {
   const match = /^window:(\d+):\d+$/.exec(sourceId);
   return match ? Number(match[1]) : undefined;
-};
-
-/**
- * Resolve the native helper invocation for packaged and development builds.
- */
-const createHelperInvocation = (sourceId: string): HelperInvocation | undefined => {
-  const packagedHelperPath = path.join(
-    process.resourcesPath,
-    "native",
-    HELPER_BINARY_NAME
-  );
-  if (app.isPackaged && existsSync(packagedHelperPath)) {
-    return {
-      command: packagedHelperPath,
-      args: ["activate", sourceId]
-    };
-  }
-
-  if (app.isPackaged) {
-    return undefined;
-  }
-
-  const developmentHelperPath = path.join(
-    process.cwd(),
-    "build/native",
-    HELPER_BINARY_NAME
-  );
-  if (existsSync(developmentHelperPath)) {
-    return {
-      command: developmentHelperPath,
-      args: ["activate", sourceId]
-    };
-  }
-
-  if (!existsSync(SWIFT_SOURCE_PATH)) {
-    return undefined;
-  }
-
-  return {
-    command: "/usr/bin/swift",
-    args: [SWIFT_SOURCE_PATH, "activate", sourceId]
-  };
 };
 
 /**
@@ -85,40 +28,21 @@ const parseHelperOutput = (stdout: string): WindowActivationResult => {
 const runActivationHelper = async (
   sourceId: string
 ): Promise<WindowActivationResult> => {
-  const invocation = createHelperInvocation(sourceId);
-  if (!invocation) {
-    return {
+  return await runWindowNativeHelper({
+    args: ["activate", sourceId],
+    parseStdout: parseHelperOutput,
+    createUnavailableResult: () => ({
       activated: false,
       focused: false,
       status: "helper-unavailable",
       error: "Window activation helper was not found"
-    };
-  }
-
-  return await new Promise((resolve) => {
-    execFile(
-      invocation.command,
-      invocation.args,
-      { timeout: HELPER_TIMEOUT_MS },
-      (error, stdout, stderr) => {
-        try {
-          const result = parseHelperOutput(stdout);
-          resolve(result);
-          return;
-        } catch {
-          resolve({
-            activated: false,
-            focused: false,
-            status: "activation-failed",
-            error:
-              stderr.trim() ||
-              (error instanceof Error
-                ? error.message
-                : "Window activation failed")
-          });
-        }
-      }
-    );
+    }),
+    createFailureResult: (message) => ({
+      activated: false,
+      focused: false,
+      status: "activation-failed",
+      error: message || "Window activation failed"
+    })
   });
 };
 

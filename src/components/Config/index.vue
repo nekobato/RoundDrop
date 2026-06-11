@@ -451,29 +451,29 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
       </p>
       <template #footer>
         <div class="permission-actions">
-          <button
-            class="dialog-button secondary"
-            type="button"
+          <el-button
+            native-type="button"
             @click="onCancelWindowSelectionPermission"
           >
             キャンセル
-          </button>
-          <button
-            class="dialog-button secondary"
-            type="button"
+          </el-button>
+          <el-button
+            type="info"
+            plain
+            native-type="button"
             :disabled="isWindowSelectionUpdating"
             @click="onOpenScreenRecordingSettings"
           >
             システム設定を開く
-          </button>
-          <button
-            class="dialog-button primary"
-            type="button"
+          </el-button>
+          <el-button
+            type="primary"
+            native-type="button"
             :disabled="isWindowSelectionUpdating"
             @click="onRetryEnableWindowSelectionFromPermissionDialog"
           >
             再確認して有効化
-          </button>
+          </el-button>
         </div>
       </template>
     </el-dialog>
@@ -649,26 +649,9 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-}
-.dialog-button {
-  height: 32px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 8px;
-  color: var(--color-white-50);
-  cursor: pointer;
 
-  &:disabled {
-    cursor: progress;
-    opacity: 0.64;
-  }
-
-  &.secondary {
-    background-color: var(--color-white-t100);
-  }
-
-  &.primary {
-    background-color: var(--color-teal-500);
+  :deep(.el-button + .el-button) {
+    margin-left: 0;
   }
 }
 .diagnostics-field {

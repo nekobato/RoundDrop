@@ -1,5 +1,5 @@
 /**
- * Window selection helpers backed by Electron desktopCapturer.
+ * Window selection helpers for listing windows and checking permissions.
  */
 import { desktopCapturer, systemPreferences } from "electron";
 import type {
@@ -8,8 +8,13 @@ import type {
   WindowSelectionPermissionCheckResult,
   WindowSelectionPermissionStatus
 } from "../src/types/app";
+import { runWindowNativeHelper } from "./windowNativeHelper";
 
 const NO_THUMBNAIL_SIZE = { width: 0, height: 0 };
+
+type NativeWindowListResponse = {
+  windows: RunningWindow[];
+};
 
 /**
  * Convert Electron's platform media status into the shared renderer type.
@@ -37,9 +42,8 @@ export const isBlockingPermissionStatus = (
  * macOS TCC evaluates the currently running Electron process. During pnpm dev,
  * that can differ from the packaged RoundDrop.app identity the user approved.
  *
- * Accessibility is not gated here: the current window view lists
- * desktopCapturer window sources and activates the original app path, without
- * using Accessibility APIs to focus a specific window.
+ * Accessibility is not gated here: the native activation helper prompts for it
+ * only when the user chooses a specific window to focus.
  */
 export const getWindowSelectionPermissions =
   (): WindowSelectionPermissionCheckResult => {
@@ -79,13 +83,12 @@ const toRunningWindow = (
 };
 
 /**
- * Read currently available window sources without collecting thumbnails.
+ * Read currently available desktop capturer window sources.
  *
- * This intentionally does not resolve or filter by bundleId: the window view
- * lists Electron-reported window sources, not only applications registered in
- * the RoundDrop launcher.
+ * This is used as a non-macOS fallback because the macOS native helper can
+ * enumerate windows across Spaces.
  */
-export const getRunningWindows = async (): Promise<RunningWindowsResult> => {
+const getDesktopCapturerWindows = async (): Promise<RunningWindowsResult> => {
   const sources = await desktopCapturer.getSources({
     types: ["window"],
     thumbnailSize: NO_THUMBNAIL_SIZE,
@@ -96,4 +99,50 @@ export const getRunningWindows = async (): Promise<RunningWindowsResult> => {
     windows: sources.map(toRunningWindow),
     status: getWindowSelectionPermissionStatus()
   };
+};
+
+/**
+ * Convert native helper output into a running windows result.
+ */
+const parseNativeWindowList = (stdout: string): RunningWindowsResult => {
+  const result = JSON.parse(stdout.trim()) as NativeWindowListResponse;
+  return {
+    windows: result.windows,
+    status: getWindowSelectionPermissionStatus()
+  };
+};
+
+/**
+ * Read macOS windows across Spaces through the native helper.
+ */
+const getNativeRunningWindows = async (): Promise<RunningWindowsResult> => {
+  return await runWindowNativeHelper({
+    args: ["list"],
+    parseStdout: parseNativeWindowList,
+    createUnavailableResult: () => ({
+      windows: [],
+      status: getWindowSelectionPermissionStatus(),
+      error: "ウィンドウ一覧ヘルパーが見つかりません"
+    }),
+    createFailureResult: (message) => ({
+      windows: [],
+      status: getWindowSelectionPermissionStatus(),
+      error: message || "ウィンドウ一覧の取得に失敗しました"
+    })
+  });
+};
+
+/**
+ * Read currently available window sources.
+ *
+ * This intentionally does not resolve or filter by bundleId: the window view
+ * lists system-reported window sources, not only applications registered in
+ * the RoundDrop launcher.
+ */
+export const getRunningWindows = async (): Promise<RunningWindowsResult> => {
+  if (process.platform === "darwin") {
+    return await getNativeRunningWindows();
+  }
+
+  return await getDesktopCapturerWindows();
 };
