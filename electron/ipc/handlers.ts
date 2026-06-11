@@ -11,7 +11,8 @@ import {
   setCommands,
   setDiagnostics,
   setIconSize,
-  setShortcut
+  setShortcut,
+  setWindowSelectionEnabled
 } from "../store";
 import {
   deleteImage,
@@ -23,6 +24,13 @@ import {
   ensureBundleIdsInCommands,
   getBundleIdFromApp
 } from "../utils/appMetadata";
+import {
+  getWindowSelectionPermissionStatus,
+  getWindowSelectionPermissions,
+  getRunningWindows,
+  isBlockingPermissionStatus
+} from "../windowSelection";
+import { activateRunningWindow } from "../windowActivation";
 import { IPC_CHANNELS } from "./channels";
 import {
   captureUsageEvent,
@@ -30,7 +38,15 @@ import {
   reportError
 } from "../utils/sentry";
 import type { RunningAppsState } from "../runningApps";
-import type { AppCommand, Config } from "../../src/types/app";
+import type {
+  AppCommand,
+  Config,
+  WindowActivationRequest,
+  WindowActivationResult,
+  WindowSelectionPermissionCheckResult,
+  RunningWindowsResult,
+  WindowSelectionToggleResult
+} from "../../src/types/app";
 
 type ShortcutPayload = {
   name: keyof Config["shortcuts"];
@@ -38,6 +54,9 @@ type ShortcutPayload = {
 };
 
 type DiagnosticsPayload = Config["diagnostics"];
+
+const SCREEN_RECORDING_SETTINGS_URL =
+  "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
 
 type AddAppCommandPayload = {
   path: string;
@@ -131,6 +150,55 @@ export const registerIpcHandlers = ({
   });
 
   ipcMain.handle(
+    IPC_CHANNELS.setWindowSelectionEnabled,
+    async (_, enabled: boolean): Promise<WindowSelectionToggleResult> => {
+      if (!enabled) {
+        setWindowSelectionEnabled(false);
+        notifyConfigUpdated();
+        return {
+          enabled: false,
+          status: getWindowSelectionPermissionStatus()
+        };
+      }
+
+      const logPath = getMainLogPath();
+      try {
+        const permissions = getWindowSelectionPermissions();
+        const status = getWindowSelectionPermissionStatus();
+        if (!permissions.granted) {
+          return {
+            enabled: false,
+            status,
+            permissions: permissions.permissions,
+            error:
+              "ウィンドウ選択機能に必要な権限が許可されていません",
+            logPath
+          };
+        }
+
+        setWindowSelectionEnabled(true);
+        notifyConfigUpdated();
+        return {
+          enabled: true,
+          status
+        };
+      } catch (error) {
+        logError(
+          "windowSelection",
+          "Failed to enable window selection",
+          error
+        );
+        return {
+          enabled: false,
+          status: "unknown",
+          error: "ウィンドウ選択機能の有効化に失敗しました",
+          logPath
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
     IPC_CHANNELS.setDiagnostics,
     async (_, payload: DiagnosticsPayload) => {
       setDiagnostics(payload);
@@ -147,6 +215,92 @@ export const registerIpcHandlers = ({
   ipcMain.handle(IPC_CHANNELS.getRunningApps, () => {
     return getRunningAppsState();
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.getWindowSelectionPermissions,
+    (): WindowSelectionPermissionCheckResult => {
+      return getWindowSelectionPermissions();
+    }
+  );
+
+  ipcMain.handle(IPC_CHANNELS.openScreenRecordingSettings, async () => {
+    const logPath = getMainLogPath();
+    try {
+      await shell.openExternal(SCREEN_RECORDING_SETTINGS_URL);
+      return { opened: true };
+    } catch (error) {
+      logError(
+        "windowSelection",
+        "Failed to open screen recording settings",
+        error
+      );
+      return {
+        opened: false,
+        error: "macOS の画面収録設定を開けませんでした",
+        logPath
+      };
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.getRunningWindows,
+    async (): Promise<RunningWindowsResult> => {
+      const logPath = getMainLogPath();
+      try {
+        const permissions = getWindowSelectionPermissions();
+        if (!permissions.granted) {
+          return {
+            windows: [],
+            status: getWindowSelectionPermissionStatus(),
+            error:
+              "ウィンドウ一覧を表示するには権限が必要です。macOS のシステム設定から許可してください",
+            logPath
+          };
+        }
+        const result = await getRunningWindows();
+        if (isBlockingPermissionStatus(result.status)) {
+          return {
+            windows: [],
+            status: result.status,
+            error:
+              "ウィンドウ一覧を表示するには画面収録の権限が必要です。macOS のシステム設定から許可してください",
+            logPath
+          };
+        }
+        return result.error ? { ...result, logPath } : result;
+      } catch (error) {
+        logError("windowSelection", "Failed to get running windows", error);
+        return {
+          windows: [],
+          status: "unknown",
+          error: "ウィンドウ一覧の取得に失敗しました",
+          logPath
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.focusRunningWindow,
+    async (_, payload: WindowActivationRequest): Promise<WindowActivationResult> => {
+      const logPath = getMainLogPath();
+      try {
+        const result = await activateRunningWindow(payload);
+        return result;
+      } catch (error) {
+        logError("windowActivation", "Failed to focus running window", error);
+        return {
+          activated: false,
+          focused: false,
+          status: "activation-failed",
+          error: "ウィンドウの前面化に失敗しました",
+          logPath
+        };
+      } finally {
+        requestRingClose();
+      }
+    }
+  );
 
   ipcMain.handle(IPC_CHANNELS.setCommands, async (_, payload: AppCommand[]) => {
     const { commands } = await ensureBundleIdsInCommands(payload);

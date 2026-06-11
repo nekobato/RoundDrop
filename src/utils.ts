@@ -6,11 +6,12 @@ export const defaultConfig: Config = {
     toggleCommand: "Control+Alt+Z"
   },
   iconSize: 3,
+  windowSelectionEnabled: false,
   diagnostics: {
     enabled: false
   },
   commands: []
-};
+} satisfies Config;
 
 export const iconSizes = [24, 32, 48, 64];
 
