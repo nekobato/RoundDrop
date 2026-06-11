@@ -2,7 +2,7 @@
 import { AppCommand, Config } from "@/types/app";
 import { ElMessage, ElTree } from "element-plus";
 import AppIcon from "@/components/AppIcon.vue";
-import type Node from "element-plus/es/components/tree/src/model/node";
+import type ElementPlusTreeNode from "element-plus/es/components/tree/src/model/node";
 import { inject, nextTick, ref, Ref } from "vue";
 import { Icon } from "@iconify/vue";
 import {
@@ -58,7 +58,11 @@ const onChangeName = (e: Event, id: string) => {
   editingItemId.value = undefined;
 };
 
-const allowDrop = (_: Node, dropNode: Node, type: string) => {
+const allowDrop = (
+  _: ElementPlusTreeNode,
+  dropNode: ElementPlusTreeNode,
+  type: string
+) => {
   if (type === "inner" && dropNode.data.type === "command") {
     return false;
   }
@@ -66,7 +70,11 @@ const allowDrop = (_: Node, dropNode: Node, type: string) => {
 };
 
 // https://element-plus.org/en-US/component/tree.html#events
-const nodeDrop = (node: Node, dropNode: Node, type: DropType) => {
+const nodeDrop = (
+  node: ElementPlusTreeNode,
+  dropNode: ElementPlusTreeNode,
+  type: DropType
+) => {
   const currentTree = config?.value.commands;
 
   if (!currentTree) {

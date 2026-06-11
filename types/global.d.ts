@@ -3,6 +3,16 @@ import { type IpcRendererEvent } from "electron";
 export {};
 
 declare global {
+  interface ImportMetaEnv {
+    readonly VITE_SENTRY_DSN?: string;
+    readonly VITE_SENTRY_ENVIRONMENT?: string;
+    readonly VITE_SENTRY_TRACES_SAMPLE_RATE?: string;
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+
   interface Window {
     ipc: {
       send: (event: string, payload?: any) => void;

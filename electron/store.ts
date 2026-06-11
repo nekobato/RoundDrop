@@ -17,6 +17,9 @@ const DEFAULT_CONFIG: Config = {
   },
   iconSize: 3,
   windowSelectionEnabled: false,
+  diagnostics: {
+    enabled: false
+  },
   commands: []
 };
 
@@ -37,6 +40,10 @@ const normalizeConfig = (config?: Partial<Config>): Config => {
       typeof config?.windowSelectionEnabled === "boolean"
         ? config.windowSelectionEnabled
         : DEFAULT_CONFIG.windowSelectionEnabled,
+    diagnostics: {
+      ...DEFAULT_CONFIG.diagnostics,
+      ...(config?.diagnostics ?? {})
+    },
     commands: Array.isArray(config?.commands)
       ? config.commands
       : [...DEFAULT_CONFIG.commands]
@@ -66,6 +73,18 @@ export const store = new Store<Config>({
     windowSelectionEnabled: {
       type: "boolean",
       default: DEFAULT_CONFIG.windowSelectionEnabled
+    },
+    diagnostics: {
+      type: "object",
+      default: DEFAULT_CONFIG.diagnostics,
+      properties: {
+        enabled: {
+          type: "boolean",
+          default: DEFAULT_CONFIG.diagnostics.enabled
+        }
+      },
+      required: ["enabled"],
+      additionalProperties: false
     },
     commands: {
       type: "array",
@@ -148,6 +167,13 @@ export const setIconSize = (iconSize: number) => {
  */
 export const setWindowSelectionEnabled = (enabled: boolean) => {
   store.set("windowSelectionEnabled", enabled);
+};
+
+/**
+ * Update diagnostic event collection settings.
+ */
+export const setDiagnostics = (diagnostics: Config["diagnostics"]) => {
+  store.set("diagnostics", diagnostics);
 };
 
 /**

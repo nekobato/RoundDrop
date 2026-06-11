@@ -14,6 +14,9 @@ export type Config = {
   };
   iconSize: number;
   windowSelectionEnabled: boolean;
+  diagnostics: {
+    enabled: boolean;
+  };
   commands: AppCommand[];
 };
 
