@@ -2,9 +2,11 @@
 import { computed, inject, onMounted, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
+import { ElMessage } from "element-plus";
 import type {
   AppCommand,
   Config,
+  WindowActivationResult,
   RunningWindow,
   RunningWindowsResult
 } from "../types/app";
@@ -186,6 +188,38 @@ const focusedCommand = computed(() => {
   return item?.type === "command" ? item : undefined;
 });
 
+const focusedWindow = computed(() => {
+  if (!isWindowSelectionVisible.value) {
+    return undefined;
+  }
+  return windowSelectionWindows.value[normalizedFocusIndex.value];
+});
+
+const windowActivationErrorMessages: Partial<
+  Record<WindowActivationResult["status"], string>
+> = {
+  "accessibility-permission-required":
+    "選択したウィンドウを前面化するにはアクセシビリティ権限が必要です。macOS のシステム設定から許可してください",
+  "activation-failed": "ウィンドウの前面化に失敗しました",
+  "ax-window-not-found": "選択したウィンドウを前面化できませんでした",
+  "helper-unavailable": "ウィンドウ前面化ヘルパーが見つかりません",
+  "invalid-window-id": "選択したウィンドウを識別できませんでした",
+  "raise-failed": "選択したウィンドウを前面化できませんでした",
+  "unsupported-platform": "ウィンドウ前面化は macOS でのみ利用できます",
+  "window-not-found": "選択したウィンドウが見つかりませんでした"
+};
+
+/**
+ * Build a visible error message for native window activation failures.
+ */
+const createWindowActivationMessage = (result: WindowActivationResult) => {
+  const message = windowActivationErrorMessages[result.status] ?? result.error;
+  if (!message) {
+    return undefined;
+  }
+  return result.logPath ? `${message}\n${result.logPath}` : message;
+};
+
 const windowSelectionStatusLabel = computed(() => {
   if (!isWindowSelectionVisible.value) {
     return undefined;
@@ -312,11 +346,18 @@ const onKeyDownZ = () => {
   }
 };
 
-const onKeyDownEnter = () => {
+const onKeyDownEnter = async () => {
   if (isWindowSelectionVisible.value) {
-    const command = focusedCommand.value;
-    if (command && windowSelectionWindows.value.length > 0) {
-      window.ipc.send("open-path", command.command);
+    const windowItem = focusedWindow.value;
+    if (windowItem) {
+      const result = (await window.ipc.invoke("focus:running-window", {
+        id: windowItem.id
+      })) as WindowActivationResult;
+      const errorMessage = createWindowActivationMessage(result);
+      if (errorMessage) {
+        console.error("[ring] Failed to focus running window", result.error);
+        ElMessage.error(errorMessage);
+      }
     }
     return;
   }

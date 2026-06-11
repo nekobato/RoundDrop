@@ -1,4 +1,7 @@
 const pkg = require("./package.json");
+const { existsSync } = require("node:fs");
+
+const windowActivatorPath = "build/native/rounddrop-window-activator";
 
 /**
  * @see https://www.electron.build/configuration/configuration
@@ -12,6 +15,14 @@ const config = {
     output: `release/${pkg.version}`
   },
   files: ["dist", "!dist/assets/*.map", "dist-electron"],
+  extraResources: existsSync(windowActivatorPath)
+    ? [
+        {
+          from: windowActivatorPath,
+          to: "native/rounddrop-window-activator"
+        }
+      ]
+    : [],
   mac: {
     target: ["default"],
     icon: "dist/icons/mac/icon.icns",

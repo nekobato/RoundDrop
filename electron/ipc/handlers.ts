@@ -30,6 +30,7 @@ import {
   getRunningWindows,
   isBlockingPermissionStatus
 } from "../windowSelection";
+import { activateRunningWindow } from "../windowActivation";
 import { IPC_CHANNELS } from "./channels";
 import {
   captureUsageEvent,
@@ -40,6 +41,8 @@ import type { RunningAppsState } from "../runningApps";
 import type {
   AppCommand,
   Config,
+  WindowActivationRequest,
+  WindowActivationResult,
   WindowSelectionPermissionCheckResult,
   RunningWindowsResult,
   WindowSelectionToggleResult
@@ -249,6 +252,29 @@ export const registerIpcHandlers = ({
           windows: [],
           status: "unknown",
           error: "ウィンドウ一覧の取得に失敗しました",
+          logPath
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.focusRunningWindow,
+    async (_, payload: WindowActivationRequest): Promise<WindowActivationResult> => {
+      const logPath = getMainLogPath();
+      try {
+        const result = await activateRunningWindow(payload);
+        if (result.focused || (result.activated && !result.error)) {
+          requestRingClose();
+        }
+        return result.error ? { ...result, logPath } : result;
+      } catch (error) {
+        logError("windowActivation", "Failed to focus running window", error);
+        return {
+          activated: false,
+          focused: false,
+          status: "activation-failed",
+          error: "ウィンドウの前面化に失敗しました",
           logPath
         };
       }

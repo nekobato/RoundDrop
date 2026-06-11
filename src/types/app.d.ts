@@ -61,3 +61,30 @@ export type WindowSelectionToggleResult = {
   error?: string;
   logPath?: string;
 };
+
+export type WindowActivationRequest = {
+  id: string;
+};
+
+export type WindowActivationResult = {
+  activated: boolean;
+  focused: boolean;
+  status:
+    | "focused"
+    | "app-activated"
+    | "accessibility-permission-required"
+    | "activation-failed"
+    | "ax-window-not-found"
+    | "helper-unavailable"
+    | "invalid-arguments"
+    | "invalid-window-id"
+    | "raise-failed"
+    | "unsupported-platform"
+    | "window-not-found"
+    | "encoding-failed";
+  error?: string;
+  windowId?: number;
+  processId?: number;
+  title?: string;
+  logPath?: string;
+};
