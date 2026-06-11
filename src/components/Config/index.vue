@@ -131,7 +131,37 @@ const onCancelWindowSelectionPermission = () => {
   isWindowSelectionPermissionDialogVisible.value = false;
 };
 
-const onEnableWindowSelectionFromPermissionDialog = async () => {
+/**
+ * Open macOS Screen Recording settings because Electron cannot request it directly.
+ */
+const onOpenScreenRecordingSettings = async () => {
+  if (isWindowSelectionUpdating.value) {
+    return;
+  }
+
+  isWindowSelectionUpdating.value = true;
+  try {
+    const result = await window.ipc.invoke("open:screen-recording-settings");
+    if (result?.error) {
+      const message = result.logPath
+        ? `${result.error}\n${result.logPath}`
+        : result.error;
+      ElMessage.error(message);
+      return;
+    }
+    ElMessage.info("macOS のシステム設定で画面収録を許可してください");
+  } catch (error) {
+    console.error("[config] Failed to open screen recording settings", error);
+    ElMessage.error("macOS の画面収録設定を開けませんでした");
+  } finally {
+    isWindowSelectionUpdating.value = false;
+  }
+};
+
+/**
+ * Re-check Screen Recording permission and enable window selection once granted.
+ */
+const onRetryEnableWindowSelectionFromPermissionDialog = async () => {
   if (!config || isWindowSelectionUpdating.value) {
     return;
   }
@@ -141,7 +171,7 @@ const onEnableWindowSelectionFromPermissionDialog = async () => {
     const permissions = await getWindowSelectionPermissions();
     windowSelectionPermissions.value = permissions.permissions;
     if (!permissions.granted) {
-      ElMessage.error("必要な権限が許可されていません");
+      ElMessage.error("まだ必要な権限が許可されていません");
       return;
     }
 
@@ -416,22 +446,35 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
           <span>{{ permission.label }}</span>
         </li>
       </ul>
+      <p class="permission-note">
+        システム設定で RoundDrop を許可したあと、アプリに戻って再確認してください。
+      </p>
       <template #footer>
-        <button
-          class="dialog-button secondary"
-          type="button"
-          @click="onCancelWindowSelectionPermission"
-        >
-          キャンセル
-        </button>
-        <button
-          class="dialog-button primary"
-          type="button"
-          :disabled="isWindowSelectionUpdating"
-          @click="onEnableWindowSelectionFromPermissionDialog"
-        >
-          機能を有効にする
-        </button>
+        <div class="permission-actions">
+          <button
+            class="dialog-button secondary"
+            type="button"
+            @click="onCancelWindowSelectionPermission"
+          >
+            キャンセル
+          </button>
+          <button
+            class="dialog-button secondary"
+            type="button"
+            :disabled="isWindowSelectionUpdating"
+            @click="onOpenScreenRecordingSettings"
+          >
+            システム設定を開く
+          </button>
+          <button
+            class="dialog-button primary"
+            type="button"
+            :disabled="isWindowSelectionUpdating"
+            @click="onRetryEnableWindowSelectionFromPermissionDialog"
+          >
+            再確認して有効化
+          </button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -594,6 +637,18 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
   .permission-item.granted & {
     opacity: 1;
   }
+}
+.permission-note {
+  margin: 12px 0 0;
+  color: var(--color-white-t500);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.permission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 .dialog-button {
   height: 32px;

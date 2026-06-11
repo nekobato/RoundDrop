@@ -55,6 +55,9 @@ type ShortcutPayload = {
 
 type DiagnosticsPayload = Config["diagnostics"];
 
+const SCREEN_RECORDING_SETTINGS_URL =
+  "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
+
 type AddAppCommandPayload = {
   path: string;
   name: string;
@@ -219,6 +222,25 @@ export const registerIpcHandlers = ({
       return getWindowSelectionPermissions();
     }
   );
+
+  ipcMain.handle(IPC_CHANNELS.openScreenRecordingSettings, async () => {
+    const logPath = getMainLogPath();
+    try {
+      await shell.openExternal(SCREEN_RECORDING_SETTINGS_URL);
+      return { opened: true };
+    } catch (error) {
+      logError(
+        "windowSelection",
+        "Failed to open screen recording settings",
+        error
+      );
+      return {
+        opened: false,
+        error: "macOS の画面収録設定を開けませんでした",
+        logPath
+      };
+    }
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.getRunningWindows,
