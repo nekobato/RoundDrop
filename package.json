@@ -1,7 +1,7 @@
 {
   "name": "round-drop",
   "private": true,
-  "version": "1.5.2",
+  "version": "1.6.0",
   "author": {
     "name": "nekobato",
     "email": "nekobato@gmail.com",
@@ -36,7 +36,7 @@
     "@vitejs/plugin-vue": "6.0.7",
     "@vueuse/integrations": "14.3.0",
     "electron": "42.3.0",
-    "electron-builder": "26.13.0",
+    "electron-builder": "26.15.2",
     "electron-icon-builder": "2.0.1",
     "electron-log": "5.4.4",
     "electron-updater": "6.8.8",
