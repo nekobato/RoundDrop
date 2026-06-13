@@ -33,7 +33,9 @@ export type WindowSelectionPermissionStatus =
   | "restricted"
   | "unknown";
 
-export type WindowSelectionPermissionName = "screen-recording";
+export type WindowSelectionPermissionName =
+  | "screen-recording"
+  | "accessibility";
 
 export type WindowSelectionPermission = {
   name: WindowSelectionPermissionName;

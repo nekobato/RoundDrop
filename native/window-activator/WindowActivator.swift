@@ -263,10 +263,6 @@ func isAccessibilityTrusted() -> Bool {
   return AXIsProcessTrustedWithOptions(options)
 }
 
-func canInspectAccessibilityWindows() -> Bool {
-  return AXIsProcessTrusted()
-}
-
 func listWindows() {
   let options: CGWindowListOption = [.optionAll, .excludeDesktopElements]
   guard let windowList = CGWindowListCopyWindowInfo(
@@ -280,7 +276,6 @@ func listWindows() {
 
   var seenWindowIds = Set<CGWindowID>()
   var appIconCache = [pid_t: String]()
-  let shouldFilterByAccessibility = canInspectAccessibilityWindows()
   let windows = windowList.compactMap { info -> RunningWindowResponse? in
     guard isListableWindow(info),
           let windowId = cgWindowId(info[kCGWindowNumber as String]),
@@ -289,11 +284,6 @@ func listWindows() {
           isActivatableApplication(processId: processId),
           !seenWindowIds.contains(windowId)
     else {
-      return nil
-    }
-
-    let windowInfo = WindowInfo(id: windowId, processId: processId, title: windowName)
-    if shouldFilterByAccessibility && findAXWindow(for: windowInfo) == nil {
       return nil
     }
 

@@ -28,7 +28,8 @@ import {
   getWindowSelectionPermissionStatus,
   getWindowSelectionPermissions,
   getRunningWindows,
-  isBlockingPermissionStatus
+  isBlockingPermissionStatus,
+  primeWindowSelectionPermissions
 } from "../windowSelection";
 import { activateRunningWindow } from "../windowActivation";
 import { IPC_CHANNELS } from "./channels";
@@ -57,6 +58,8 @@ type DiagnosticsPayload = Config["diagnostics"];
 
 const SCREEN_RECORDING_SETTINGS_URL =
   "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
+const ACCESSIBILITY_SETTINGS_URL =
+  "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
 
 type AddAppCommandPayload = {
   path: string;
@@ -223,6 +226,22 @@ export const registerIpcHandlers = ({
     }
   );
 
+  ipcMain.handle(
+    IPC_CHANNELS.primeWindowSelectionPermissions,
+    async (): Promise<WindowSelectionPermissionCheckResult> => {
+      try {
+        return await primeWindowSelectionPermissions();
+      } catch (error) {
+        logError(
+          "windowSelection",
+          "Failed to prime window selection permissions",
+          error
+        );
+        return getWindowSelectionPermissions();
+      }
+    }
+  );
+
   ipcMain.handle(IPC_CHANNELS.openScreenRecordingSettings, async () => {
     const logPath = getMainLogPath();
     try {
@@ -237,6 +256,25 @@ export const registerIpcHandlers = ({
       return {
         opened: false,
         error: "macOS の画面収録設定を開けませんでした",
+        logPath
+      };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.openAccessibilitySettings, async () => {
+    const logPath = getMainLogPath();
+    try {
+      await shell.openExternal(ACCESSIBILITY_SETTINGS_URL);
+      return { opened: true };
+    } catch (error) {
+      logError(
+        "windowSelection",
+        "Failed to open accessibility settings",
+        error
+      );
+      return {
+        opened: false,
+        error: "macOS のアクセシビリティ設定を開けませんでした",
         logPath
       };
     }

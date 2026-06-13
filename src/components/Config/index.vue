@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ref, computed, inject, ref } from "vue";
+import { Ref, computed, inject, nextTick, ref } from "vue";
 import type {
   AppCommand,
   Config,
@@ -77,6 +77,15 @@ const getWindowSelectionPermissions = async () => {
   )) as WindowSelectionPermissionCheckResult;
 };
 
+/**
+ * Touch protected APIs so macOS can list RoundDrop in permission settings.
+ */
+const primeWindowSelectionPermissions = async () => {
+  return (await window.ipc.invoke(
+    "prime:window-selection-permissions"
+  )) as WindowSelectionPermissionCheckResult;
+};
+
 const applyWindowSelectionToggle = async (enabled: boolean) => {
   const result = (await window.ipc.invoke(
     "set:windowSelectionEnabled",
@@ -88,6 +97,24 @@ const applyWindowSelectionToggle = async (enabled: boolean) => {
   }
   emit("change");
   return result;
+};
+
+/**
+ * Show the permission dialog and touch protected APIs for macOS TCC registration.
+ */
+const showWindowSelectionPermissionDialog = async (
+  permissions: WindowSelectionPermission[]
+) => {
+  windowSelectionPermissions.value = permissions;
+  isWindowSelectionPermissionDialogVisible.value = true;
+  await nextTick();
+
+  try {
+    const primedPermissions = await primeWindowSelectionPermissions();
+    windowSelectionPermissions.value = primedPermissions.permissions;
+  } catch (error) {
+    console.error("[config] Failed to prime window selection permissions", error);
+  }
 };
 
 const onChangeWindowSelectionEnabled = async (e: Event) => {
@@ -114,7 +141,7 @@ const onChangeWindowSelectionEnabled = async (e: Event) => {
     const permissions = await getWindowSelectionPermissions();
     windowSelectionPermissions.value = permissions.permissions;
     if (!permissions.granted) {
-      isWindowSelectionPermissionDialogVisible.value = true;
+      await showWindowSelectionPermissionDialog(permissions.permissions);
       return;
     }
 
@@ -159,7 +186,34 @@ const onOpenScreenRecordingSettings = async () => {
 };
 
 /**
- * Re-check Screen Recording permission and enable window selection once granted.
+ * Open macOS Accessibility settings because the window activation helper needs it.
+ */
+const onOpenAccessibilitySettings = async () => {
+  if (isWindowSelectionUpdating.value) {
+    return;
+  }
+
+  isWindowSelectionUpdating.value = true;
+  try {
+    const result = await window.ipc.invoke("open:accessibility-settings");
+    if (result?.error) {
+      const message = result.logPath
+        ? `${result.error}\n${result.logPath}`
+        : result.error;
+      ElMessage.error(message);
+      return;
+    }
+    ElMessage.info("macOS のシステム設定でアクセシビリティを許可してください");
+  } catch (error) {
+    console.error("[config] Failed to open accessibility settings", error);
+    ElMessage.error("macOS のアクセシビリティ設定を開けませんでした");
+  } finally {
+    isWindowSelectionUpdating.value = false;
+  }
+};
+
+/**
+ * Re-check required permissions and enable window selection once granted.
  */
 const onRetryEnableWindowSelectionFromPermissionDialog = async () => {
   if (!config || isWindowSelectionUpdating.value) {
@@ -168,7 +222,7 @@ const onRetryEnableWindowSelectionFromPermissionDialog = async () => {
 
   isWindowSelectionUpdating.value = true;
   try {
-    const permissions = await getWindowSelectionPermissions();
+    const permissions = await primeWindowSelectionPermissions();
     windowSelectionPermissions.value = permissions.permissions;
     if (!permissions.granted) {
       ElMessage.error("まだ必要な権限が許可されていません");
@@ -464,7 +518,16 @@ const onChangeTreeItem = async (tree: AppCommand[]) => {
             :disabled="isWindowSelectionUpdating"
             @click="onOpenScreenRecordingSettings"
           >
-            システム設定を開く
+            画面収録設定
+          </el-button>
+          <el-button
+            type="info"
+            plain
+            native-type="button"
+            :disabled="isWindowSelectionUpdating"
+            @click="onOpenAccessibilitySettings"
+          >
+            アクセシビリティ設定
           </el-button>
           <el-button
             type="primary"

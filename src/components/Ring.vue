@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from "@iconify/vue";
 import { computed, inject, onMounted, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
 import CommandCursor from "./Cursor.vue";
@@ -196,9 +197,6 @@ const focusedWindow = computed(() => {
 const windowSelectionStatusLabel = computed(() => {
   if (!isWindowSelectionVisible.value) {
     return undefined;
-  }
-  if (isWindowSelectionLoading.value) {
-    return "読み込み中";
   }
   if (windowSelectionError.value) {
     return "ウィンドウ取得不可";
@@ -488,9 +486,19 @@ onMounted(() => {
         v-if="renderRingItems.length > 0"
       />
       <span
+        v-if="isWindowSelectionLoading"
         class="name"
         :class="`size-${config.iconSize}`"
+        role="status"
+        aria-label="読み込み中"
       >
+        <Icon
+          class="loading-icon"
+          icon="mingcute:loading-3-line"
+          aria-hidden="true"
+        />
+      </span>
+      <span class="name" :class="`size-${config.iconSize}`" v-else>
         {{ iconName }}
       </span>
     </div>
@@ -632,6 +640,23 @@ $icon-size-3: 64px;
   }
   &.size-3 {
     top: 72px;
+  }
+}
+.loading-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  color: #ffffff;
+  animation: ring-loading-spin 0.8s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ring-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
