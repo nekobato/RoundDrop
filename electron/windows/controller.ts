@@ -157,6 +157,7 @@ export const createWindowController = ({
     launcherWindow.on("closed", () => {
       launcherWindow = null;
     });
+    launcherWindow.on("blur", handleLauncherBlur);
 
     launcherWindow.webContents.on("did-finish-load", () => {
       launcherWindow?.webContents.send(
@@ -250,6 +251,18 @@ export const createWindowController = ({
       launcherWindow.webContents.send(IPC_CHANNELS.ringClose);
     }
     isRingVisible = false;
+  };
+
+  /**
+   * Request the launcher to close when it loses focus.
+   */
+  const handleLauncherBlur = () => {
+    if (!isRingVisible) {
+      return;
+    }
+
+    isRingAnimating = true;
+    requestRingClose();
   };
 
   /**
