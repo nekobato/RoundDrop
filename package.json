@@ -35,7 +35,7 @@
     "@types/plist": "3.0.5",
     "@vitejs/plugin-vue": "6.0.8",
     "@vueuse/integrations": "14.4.0",
-    "electron": "43.3.0",
+    "electron": "43.4.0",
     "electron-builder": "26.15.3",
     "electron-icon-builder": "2.0.1",
     "electron-log": "5.4.4",
@@ -43,14 +43,14 @@
     "element-plus": "2.14.4",
     "fs-extra": "11.4.0",
     "nanoid": "6.0.1",
-    "sass-embedded": "1.100.0",
+    "sass-embedded": "1.102.0",
     "sortablejs": "1.15.7",
     "typescript": "7.0.2",
     "vite": "8.2.1",
     "vite-plugin-electron": "1.1.1",
     "vite-plugin-electron-renderer": "1.0.0",
     "vue": "3.5.41",
-    "vue-tsc": "3.3.9"
+    "vue-tsc": "3.3.10"
   },
   "main": "dist-electron/main.js"
 }
