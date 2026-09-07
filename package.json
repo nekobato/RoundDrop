@@ -31,11 +31,11 @@
     "@electron/notarize": "3.1.1",
     "@iconify/vue": "5.0.1",
     "@sentry/electron": "7.17.0",
-    "@types/node": "26.2.0",
+    "@types/node": "26.4.0",
     "@types/plist": "3.0.5",
     "@vitejs/plugin-vue": "6.0.8",
     "@vueuse/integrations": "14.4.0",
-    "electron": "43.4.1",
+    "electron": "44.0.0",
     "electron-builder": "26.15.3",
     "electron-icon-builder": "2.0.1",
     "electron-log": "5.4.4",
@@ -49,7 +49,7 @@
     "vite": "8.2.2",
     "vite-plugin-electron": "1.1.1",
     "vite-plugin-electron-renderer": "1.0.0",
-    "vue": "3.5.41",
+    "vue": "3.5.42",
     "vue-tsc": "3.3.11"
   },
   "main": "dist-electron/main.js"
