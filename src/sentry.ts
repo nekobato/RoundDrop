@@ -14,7 +14,7 @@ const parseSampleRate = (value: string | undefined) => {
 };
 
 const SENTRY_TRACES_SAMPLE_RATE = parseSampleRate(
-  import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE
+  import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE,
 );
 
 let initialized = false;
@@ -43,13 +43,13 @@ const redactValue = (value: unknown): unknown => {
     return Object.entries(value).reduce<Record<string, unknown>>(
       (acc, [key, item]) => {
         acc[key] = /^(appPath|bundleId|command|filePath|imagePath|path)$/i.test(
-          key
+          key,
         )
           ? "[redacted]"
           : redactValue(item);
         return acc;
       },
-      {}
+      {},
     );
   }
 
@@ -64,7 +64,7 @@ const scrubEvent = (event: Sentry.ErrorEvent) => {
   return redactValue({
     ...event,
     request: event.request ? redactValue(event.request) : undefined,
-    user: undefined
+    user: undefined,
   }) as Sentry.ErrorEvent;
 };
 
@@ -90,15 +90,28 @@ export const configureSentry = async (enabled: boolean) => {
   }
 
   Sentry.init({
-    sendDefaultPii: false,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      graphQL: { document: false, variables: false },
+      queues: false,
+      stackFrameVariables: false,
+    },
+    beforeSendLog: () => null,
+    traceLifecycle: "static",
     tracesSampleRate: SENTRY_TRACES_SAMPLE_RATE,
     beforeSend: scrubEvent,
     initialScope: {
       tags: {
         app: "round-drop",
-        process: "renderer"
-      }
-    }
+        process: "renderer",
+      },
+    },
   });
 
   initialized = true;

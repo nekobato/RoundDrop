@@ -43,21 +43,21 @@ const parseSampleRate = (value: string | undefined) => {
 
 const SENTRY_DSN = firstNonEmpty(
   import.meta.env.VITE_SENTRY_DSN,
-  process.env.SENTRY_DSN
+  process.env.SENTRY_DSN,
 );
 
 const SENTRY_ENVIRONMENT = firstNonEmpty(
   import.meta.env.VITE_SENTRY_ENVIRONMENT,
   process.env.SENTRY_ENVIRONMENT,
   process.env.NODE_ENV,
-  app.isPackaged ? "production" : "development"
+  app.isPackaged ? "production" : "development",
 );
 
 const SENTRY_TRACES_SAMPLE_RATE = parseSampleRate(
   firstNonEmpty(
     import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE,
-    process.env.SENTRY_TRACES_SAMPLE_RATE
-  )
+    process.env.SENTRY_TRACES_SAMPLE_RATE,
+  ),
 );
 
 let initialized = false;
@@ -94,7 +94,7 @@ const redactValue = (value: unknown): unknown => {
           : redactValue(item);
         return acc;
       },
-      {}
+      {},
     );
   }
 
@@ -109,7 +109,7 @@ const scrubEvent = (event: Sentry.ErrorEvent) => {
   return redactValue({
     ...event,
     request: event.request ? redactValue(event.request) : undefined,
-    user: undefined
+    user: undefined,
   }) as Sentry.ErrorEvent;
 };
 
@@ -123,7 +123,7 @@ const toSentryTags = (tags: UsageTags) => {
       acc[key] = redactString(String(value)).slice(0, 200);
       return acc;
     },
-    {}
+    {},
   );
 };
 
@@ -136,7 +136,7 @@ export const initSentry = () => {
 };
 
 export const configureSentryFromConfig = async (
-  options: ConfigureSentryOptions = {}
+  options: ConfigureSentryOptions = {},
 ) => {
   const shouldEnable = hasSentryDsn() && isDiagnosticsEnabled();
 
@@ -156,16 +156,31 @@ export const configureSentryFromConfig = async (
     dsn: SENTRY_DSN,
     release: createReleaseName(),
     environment: SENTRY_ENVIRONMENT,
-    sendDefaultPii: false,
+    // Diagnostics can first be enabled after Electron is ready.
+    ipcMode: Sentry.IPCMode.Classic,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      graphQL: { document: false, variables: false },
+      queues: false,
+      stackFrameVariables: false,
+    },
+    beforeSendLog: () => null,
+    traceLifecycle: "static",
     tracesSampleRate: SENTRY_TRACES_SAMPLE_RATE,
     attachScreenshot: false,
     beforeSend: scrubEvent,
     initialScope: {
       tags: {
         app: "round-drop",
-        process: "main"
-      }
-    }
+        process: "main",
+      },
+    },
   });
 
   initialized = true;
@@ -177,7 +192,7 @@ export const configureSentryFromConfig = async (
 export const captureUsageEvent = (
   name: UsageEventName,
   tags: UsageTags = {},
-  extra: UsageExtra = {}
+  extra: UsageExtra = {},
 ) => {
   if (!isSentryActive()) {
     return;
@@ -189,9 +204,9 @@ export const captureUsageEvent = (
     tags: toSentryTags({
       event_name: name,
       event_type: "usage",
-      ...tags
+      ...tags,
     }),
-    extra: redactValue(extra) as UsageExtra
+    extra: redactValue(extra) as UsageExtra,
   });
 };
 
