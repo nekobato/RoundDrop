@@ -2,7 +2,7 @@ import {
   contextBridge,
   ipcRenderer,
   type IpcRendererEvent,
-  webUtils
+  webUtils,
 } from "electron";
 
 contextBridge.exposeInMainWorld("ipc", {
@@ -14,10 +14,10 @@ contextBridge.exposeInMainWorld("ipc", {
   },
   on(
     event: string,
-    callback: (event: IpcRendererEvent, ...args: any[]) => void
+    callback: (event: IpcRendererEvent, ...args: any[]) => void,
   ) {
     ipcRenderer.on(event, callback);
-  }
+  },
 });
 
 contextBridge.exposeInMainWorld("openUrl", (e: Event, url: string) => {
@@ -34,7 +34,7 @@ contextBridge.exposeInMainWorld("removeLoading", () => {
 });
 
 function domReady(
-  condition: DocumentReadyState[] = ["complete", "interactive"]
+  condition: DocumentReadyState[] = ["complete", "interactive"],
 ) {
   return new Promise((resolve) => {
     if (condition.includes(document.readyState)) {
@@ -59,7 +59,7 @@ const safeDOM = {
     if (Array.from(parent.children).find((e) => e === child)) {
       parent.removeChild(child);
     }
-  }
+  },
 };
 
 /**
@@ -113,9 +113,11 @@ function useLoading() {
     removeLoading() {
       safeDOM.remove(document.head, oStyle);
       safeDOM.remove(document.body, oDiv);
-    }
+    },
   };
 }
 
 const { appendLoading, removeLoading } = useLoading();
 domReady().then(appendLoading);
+// Keep the inert IPC bridge available before the user opts into diagnostics.
+import "@sentry/electron/preload";
