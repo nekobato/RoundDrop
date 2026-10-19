@@ -33,29 +33,29 @@
     "plist": "5.0.0"
   },
   "devDependencies": {
-    "@electron/notarize": "3.1.1",
+    "@electron/notarize": "3.1.2",
     "@iconify/vue": "5.0.3",
-    "@sentry/electron": "8.0.0",
-    "@types/node": "26.6.4",
+    "@sentry/electron": "8.1.0",
+    "@types/node": "26.6.5",
     "@types/plist": "3.0.5",
-    "@vitejs/plugin-vue": "6.0.9",
+    "@vitejs/plugin-vue": "6.0.10",
     "@vueuse/integrations": "15.0.0",
-    "electron": "44.5.1",
+    "electron": "44.7.0",
     "electron-builder": "26.15.3",
     "electron-icon-builder": "2.0.1",
     "electron-log": "5.4.4",
     "electron-updater": "6.8.9",
     "element-plus": "2.14.7",
     "fs-extra": "11.4.1",
-    "nanoid": "6.0.1",
+    "nanoid": "6.0.2",
     "sass-embedded": "1.105.1",
     "sortablejs": "1.15.7",
-    "typescript": "6.0.3",
-    "vite": "8.3.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
     "vite-plugin-electron": "1.1.2",
     "vite-plugin-electron-renderer": "1.0.0",
     "vue": "3.5.43",
-    "vue-tsc": "3.3.12"
+    "vue-tsc": "3.3.13"
   },
   "main": "dist-electron/main.js"
 }
