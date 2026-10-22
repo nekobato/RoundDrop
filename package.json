@@ -24,7 +24,7 @@
     "build:icon": "electron-icon-builder --input=./public/icon.png --output=./public"
   },
   "engines": {
-    "node": ">=20",
+    "node": "^22.23.4 || ^24.22.1 || ^26.12.1",
     "pnpm": ">=9"
   },
   "dependencies": {
