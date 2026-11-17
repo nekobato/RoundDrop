@@ -10,7 +10,9 @@ By default, `Control+Option+Z` displays the launcher.
 
 ## Supported OS
 
-MacOS
+The current public release is for macOS on Apple Silicon (arm64) only. No Intel Mac build is provided.
+
+The minimum supported macOS version has not been verified. An arm64 build does not guarantee compatibility with every macOS version.
 
 ## Since Mac has the Dock, isn't this app unnecessary?
 
@@ -18,7 +20,7 @@ Yes, that's right.
 
 ## Download
 
-[Latest Release](https://github.com/nekobato/RoundDrop/releases/latest)
+Download `RoundDrop-<version>-arm64.dmg` (currently `RoundDrop-1.6.2-arm64.dmg`) from the Assets section of the [latest release](https://github.com/nekobato/RoundDrop/releases/latest).
 
 ## License
 
