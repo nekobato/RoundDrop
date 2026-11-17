@@ -8,17 +8,13 @@ https://github.com/nekobato/RoundDrop/assets/861170/ffbb7e8b-83c3-4fb2-9f37-8b94
 
 By default, `Control+Option+Z` displays the launcher.
 
-## Supported OS
-
-MacOS
-
 ## Since Mac has the Dock, isn't this app unnecessary?
 
 Yes, that's right.
 
 ## Download
 
-[Latest Release](https://github.com/nekobato/RoundDrop/releases/latest)
+[Download macOS / Apple Silicon DMG](https://github.com/nekobato/RoundDrop/releases/download/v1.6.2/RoundDrop-1.6.2-arm64.dmg)
 
 ## License
 
